@@ -3,6 +3,7 @@ package com.example.smart_garden.service;
 
 import com.example.smart_garden.entities.PlantEntity;
 import com.example.smart_garden.entities.SymptomEntity;
+import com.example.smart_garden.entities.UserEntity;
 import com.example.smart_garden.ontology.PlantOntology;
 import com.example.smart_garden.repositories.PlantRepository;
 import com.example.smart_garden.repositories.SymptomRepository;
@@ -25,28 +26,22 @@ public class PlantService {
         this.ontology = new PlantOntology();
     }
 
-   /* public PlantEntity savePlant(PlantEntity plant) {
-        PlantEntity saved = plantRepo.save(plant);
-        ontology.createPlantIndividual(saved.toPlantModel());
-        return saved;
-    }*/
 
-    public PlantEntity savePlant(PlantEntity plant) {
-        // 1. Създай индивидуал в онтологията
+    public PlantEntity savePlant(PlantEntity plant, UserEntity user) {
         ontology.createPlantIndividual(plant.toPlantModel());
 
-        // 2. Извлечи нуждите от онтологията
         Map<String, String> needs = getNeedsFromPlantType(plant.getType());
-        System.out.println("Нужди за " + plant.getName() + ": " + needs);
-
-        // 3. Обогати PlantEntity с нуждите
         plant.setTemperature(needs.get("temperature"));
         plant.setHumidity(needs.get("humidity"));
         plant.setLight(needs.get("light"));
         plant.setSoilMoisture(needs.get("soilMoisture"));
 
-        // 4. Запиши в базата
+        plant.setUser(user);
         return plantRepo.save(plant);
+    }
+
+    public List<PlantEntity> getPlantsForUser(UserEntity user) {
+        return plantRepo.findByUser(user);
     }
 
 
@@ -76,7 +71,19 @@ public class PlantService {
         return plantRepo.findAll();
     }
 
-    public void deletePlant(String plantName) {
-        plantRepo.deleteById(plantName);
+    public boolean deletePlant(String plantName, UserEntity user) {
+        Optional<PlantEntity> optional = plantRepo.findById(plantName);
+        if (optional.isPresent()) {
+            PlantEntity plant = optional.get();
+            if (plant.getUser() != null && plant.getUser().getId().equals(user.getId())) {
+                plantRepo.delete(plant);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public Optional<PlantEntity> getPlantByName(String name) {
+        return plantRepo.findById(name);
     }
 }

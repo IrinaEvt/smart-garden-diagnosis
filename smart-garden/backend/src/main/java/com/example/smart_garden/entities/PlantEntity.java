@@ -2,11 +2,7 @@ package com.example.smart_garden.entities;
 
 
 import com.example.smart_garden.models.Plant;
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
-
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 import java.util.List;
 
@@ -20,6 +16,11 @@ public class PlantEntity {
     private String light;
     private String humidity;
     private String soilMoisture;
+    private String imageUrl;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private UserEntity user;
 
     @OneToMany(mappedBy = "plant", cascade = CascadeType.ALL)
     private List<SymptomEntity> symptoms;
@@ -97,5 +98,20 @@ public class PlantEntity {
 
     public void setSymptoms(List<SymptomEntity> symptoms) {
         this.symptoms = symptoms;
+    }
+
+    public UserEntity getUser() {
+        return user;
+    }
+
+    public void setUser(UserEntity user) {
+        this.user = user;
+    }
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

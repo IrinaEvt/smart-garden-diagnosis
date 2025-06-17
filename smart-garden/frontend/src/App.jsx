@@ -10,7 +10,14 @@ function App() {
       <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="*" element={<Navigate to="/" />} />
+            <Route path="/dashboard" element={
+        <PrivateRoute>
+          <Dashboard />
+        </PrivateRoute>
+      } />
+
+      {/* Може да сложиш и default redirect */}
+      <Route path="*" element={<Navigate to="/dashboard" />} />
     </Routes>
   )
 }

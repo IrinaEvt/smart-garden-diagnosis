@@ -1,13 +1,17 @@
 package com.example.smart_garden.controllers;
 
 import com.example.smart_garden.entities.PlantEntity;
+import com.example.smart_garden.entities.UserEntity;
+import com.example.smart_garden.repositories.UserRepository;
 import com.example.smart_garden.service.PlantService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 
 @RestController
@@ -16,30 +20,54 @@ import java.util.Map;
 public class PlantController {
 
     private final PlantService plantService;
+    private final UserRepository userRepo;
 
-    public PlantController(PlantService plantService) {
+    public PlantController(PlantService plantService, UserRepository userRepo) {
         this.plantService = plantService;
+        this.userRepo = userRepo;
     }
 
-    @GetMapping
-    public List<PlantEntity> getAllPlants() {
-        return plantService.getAllPlants();
-    }
 
+
+
+    // ➕ Създава ново растение за логнатия потребител
     @PostMapping
-    public PlantEntity createPlant(@RequestBody PlantEntity plant) {
-        return plantService.savePlant(plant);
+    public PlantEntity createPlant(@AuthenticationPrincipal UserDetails userDetails,
+                                   @RequestBody PlantEntity plant) {
+        // Извличаме потребителя от базата по username
+        UserEntity user = userRepo.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return plantService.savePlant(plant, user);
     }
+
 
     @DeleteMapping("/{plantName}")
-    public ResponseEntity<Void> deletePlant(@PathVariable String plantName) {
-        plantService.deletePlant(plantName);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<?> deletePlant(@AuthenticationPrincipal UserDetails userDetails,
+                                         @PathVariable String plantName) {
+        UserEntity user = userRepo.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        boolean deleted = plantService.deletePlant(plantName, user);
+        return deleted
+                ? ResponseEntity.noContent().build()
+                : ResponseEntity.status(403).body("Нямате достъп");
     }
 
 
+
+    // 🔍 Връща нуждите на тип растение (достъпно за всички логнати)
     @GetMapping("/{typeName}/needs")
     public Map<String, String> getTypeNeeds(@PathVariable String typeName) {
         return plantService.getNeedsFromPlantType(typeName);
     }
+
+    @GetMapping
+    public List<PlantEntity> getUserPlants(@AuthenticationPrincipal UserDetails userDetails) {
+        UserEntity user = userRepo.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return plantService.getPlantsForUser(user);
+    }
+
 }
