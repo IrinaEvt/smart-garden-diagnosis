@@ -3,10 +3,12 @@ package com.example.smart_garden.controllers;
 import com.example.smart_garden.entities.PlantEntity;
 import com.example.smart_garden.service.PlantService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+
 
 @RestController
 @RequestMapping("/api/plants")
