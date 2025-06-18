@@ -58,7 +58,7 @@ public class PlantController {
 
     // 🔍 Връща нуждите на тип растение (достъпно за всички логнати)
     @GetMapping("/{typeName}/needs")
-    public Map<String, String> getTypeNeeds(@PathVariable String typeName) {
+    public Map<String, String> getTypeNeeds(@AuthenticationPrincipal UserDetails userDetails,@PathVariable String typeName) {
         return plantService.getNeedsFromPlantType(typeName);
     }
 
@@ -69,5 +69,20 @@ public class PlantController {
 
         return plantService.getPlantsForUser(user);
     }
+
+    @GetMapping("/{name}")
+    public ResponseEntity<PlantEntity> getPlantByName(
+            @PathVariable String name,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        UserEntity user = userRepo.findByUsername(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return plantService.getPlantByName(name)
+                .filter(p -> p.getUser().getId().equals(user.getId()))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.status(403).build());
+    }
+
 
 }

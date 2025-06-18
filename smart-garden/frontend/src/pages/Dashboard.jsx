@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import axios from '../api/axios'
 import { useAuth } from '../auth/AuthContext'
 import PlantChart from '../components/PlantChart'
+import { Link } from 'react-router-dom'
 
 export default function Dashboard() {
   const { token } = useAuth()
@@ -72,20 +73,18 @@ export default function Dashboard() {
       {plants.length > 0 && <PlantChart plants={plants} />}
 
       {/* Карти */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {plants.map(p => (
-          <div key={p.name} className="border p-4 rounded shadow">
-            <img
-  src={p.imageUrl || 'https://example.com/default-plant.png'}
-  alt={p.name}
-  className="h-40 w-full object-cover mb-2 rounded"
-/>
-            <h2 className="text-xl font-bold">{p.name}</h2>
-            <p className="text-sm text-gray-600">{p.type}</p>
-            <button onClick={() => handleDelete(p.name)} className="mt-2 text-red-600 underline text-sm">Изтрий</button>
-          </div>
-        ))}
+<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+  {plants.map(p => (
+    <Link to={`/plants/${p.name}`} key={p.name}>
+      <div className="border p-4 rounded shadow cursor-pointer hover:bg-gray-50 transition">
+        <img src={p.imageUrl || 'https://example.com/default-plant.png'} alt={p.name} className="h-40 w-full object-cover mb-2 rounded" />
+        <h2 className="text-xl font-bold">{p.name}</h2>
+        <p className="text-sm text-gray-600">{p.type}</p>
       </div>
+    </Link>
+  ))}
+</div>
+
     </div>
   )
 }

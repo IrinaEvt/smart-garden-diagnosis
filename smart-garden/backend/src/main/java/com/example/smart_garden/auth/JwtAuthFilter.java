@@ -28,20 +28,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String path = request.getRequestURI();
+
+        // ❗️Позволяваме само на /api/auth/** да мине без JWT проверка
         if (path.startsWith("/api/auth")) {
             chain.doFilter(request, response);
             return;
         }
 
-         String authHeader = request.getHeader("Authorization");
+        String authHeader = request.getHeader("Authorization");
 
-        String username = null;
-        String jwt = null;
-
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            jwt = authHeader.substring(7);
-            username = jwtUtil.extractUsername(jwt);
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            // ❌ Ако няма токен – отказ
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+            return;
         }
+
+        String jwt = authHeader.substring(7);
+        String username = jwtUtil.extractUsername(jwt);
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = userDetailsService.loadUserByUsername(username);

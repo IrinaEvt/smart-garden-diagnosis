@@ -65,17 +65,31 @@ public class PlantOntology {
     public void createSymptomForPlant(String plantName, String symptomName) {
         OWLNamedIndividual plantIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + plantName));
         String symptomIndivName = plantName + "_" + symptomName;
+
+        System.out.println("Добавям симптом в онтологията: " + symptomIndivName + " от клас " + symptomName);
+
         OWLNamedIndividual symptomIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + symptomIndivName));
         OWLClass symptomClass = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + symptomName));
 
+        // Ако класът на симптома не съществува, го добавяме
+        if (!plantOntology.containsClassInSignature(symptomClass.getIRI())) {
+            OWLDeclarationAxiom declareSymptomClass = dataFactory.getOWLDeclarationAxiom(symptomClass);
+            ontoManager.applyChange(new AddAxiom(plantOntology, declareSymptomClass));
+        }
+
+        // Декларираме, че симптомът е от определен клас
         OWLClassAssertionAxiom classAssertion = dataFactory.getOWLClassAssertionAxiom(symptomClass, symptomIndiv);
         ontoManager.applyChange(new AddAxiom(plantOntology, classAssertion));
 
+        // Свързваме растението със симптома чрез hasSymptom
         OWLObjectProperty hasSymptom = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasSymptom"));
         OWLObjectPropertyAssertionAxiom link = dataFactory.getOWLObjectPropertyAssertionAxiom(hasSymptom, plantIndiv, symptomIndiv);
         ontoManager.applyChange(new AddAxiom(plantOntology, link));
-        reasoner.flush();
+
+        // Презареждаме reasoner-а, за да вземе предвид новите факти
+        reloadReasoner();
     }
+
 
   /*  public List<String> getAdviceForPlantIndividual(String plantIndivName) {
         List<String> result = new ArrayList<>();
@@ -155,10 +169,12 @@ public class PlantOntology {
             if (ax.getProperty().equals(hasSymptom)) {
                 OWLNamedIndividual symptomIndiv = ax.getObject().asOWLNamedIndividual();
                 String symptomName = getIndividualFriendlyName(symptomIndiv.getIRI());
+                System.out.println("SSSSSSSSSSSSSSSSS" + symptomName);
                 result.add("Симптом: " + symptomName);
 
                 // Reason за типа на симптома
                 Set<OWLClass> symptomTypes = reasoner.getTypes(symptomIndiv, true).getFlattened();
+                System.out.println("Типове: " + symptomTypes);
                 for (OWLClass symptomClass : symptomTypes) {
                     for (OWLSubClassOfAxiom sa : plantOntology.getSubClassAxiomsForSubClass(symptomClass)) {
                         if (sa.getSuperClass() instanceof OWLObjectSomeValuesFrom) {
@@ -322,11 +338,18 @@ public class PlantOntology {
         return plantModel;
     }
 
+    public void reloadReasoner() {
+        OWLReasonerFactory reasonerFactory = new ReasonerFactory();
+        this.reasoner = reasonerFactory.createReasoner(plantOntology);
+    }
+
     public void saveOntology() {
         try {
             ontoManager.saveOntology(plantOntology);
         } catch (OWLOntologyStorageException e) {
             System.out.println("Error saving ontology: " + e.getMessage());
         }
+
+
     }
 }

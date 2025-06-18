@@ -2,7 +2,7 @@
 import axios from 'axios'
 
 const instance = axios.create({
-  baseURL: 'http://localhost:8081/api', // смени ако бекендът ти слуша другаде
+  baseURL: 'http://localhost:8081/api',
 })
 
 // Добавяне на Authorization хедър автоматично
