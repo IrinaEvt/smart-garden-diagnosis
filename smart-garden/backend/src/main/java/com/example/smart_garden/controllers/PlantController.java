@@ -84,5 +84,15 @@ public class PlantController {
                 .orElse(ResponseEntity.status(403).build());
     }
 
+    @GetMapping("/types")
+    public List<String> getAllPlantTypes(@AuthenticationPrincipal UserDetails userDetails) {
+        return plantService.getAllPlantTypes();
+    }
+
+    @GetMapping("/symptoms")
+    public Map<String, List<String>> getAllSymptomsGrouped() {
+        return plantService.getSymptomOptionsGrouped();
+    }
+
 
 }

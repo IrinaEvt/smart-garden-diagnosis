@@ -11,13 +11,17 @@ export default function PlantDetails() {
   const [plant, setPlant] = useState(null)
   const [symptoms, setSymptoms] = useState([])
   const [reasoning, setReasoning] = useState([])
+  const [symptomOptions, setSymptomOptions] = useState({})
   const [tab, setTab] = useState('info')
+  const [selectedGroup, setSelectedGroup] = useState('')
+  const [selectedSymptom, setSelectedSymptom] = useState('')
   const [newSymptom, setNewSymptom] = useState('')
 
   useEffect(() => {
     fetchPlant()
     fetchSymptoms()
     fetchReasoning()
+    fetchSymptomOptions()
   }, [])
 
   const fetchPlant = async () => {
@@ -35,15 +39,25 @@ export default function PlantDetails() {
   }
 
   const fetchReasoning = async () => {
-   try {
-    const res = await axios.get(`/reasoning/${name}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    console.log('REASONING:', res.data)
-    setReasoning(res.data) 
-  } catch (err) {
-    console.error('Грешка при зареждане на reasoning:', err)
+    try {
+      const res = await axios.get(`/reasoning/${name}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setReasoning(res.data)
+    } catch (err) {
+      console.error('Грешка при зареждане на reasoning:', err)
+    }
   }
+
+  const fetchSymptomOptions = async () => {
+    try {
+      const res = await axios.get('/reasoning/symptom-options', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setSymptomOptions(res.data)
+    } catch (err) {
+      console.error('Грешка при зареждане на симптомите:', err)
+    }
   }
 
   const deleteSymptom = async (id) => {
@@ -55,10 +69,14 @@ export default function PlantDetails() {
 
   const addSymptom = async (e) => {
     e.preventDefault()
-    if (!newSymptom.trim()) return
-    await axios.post(`/reasoning/${name}/symptoms`, { name: newSymptom }, {
+    const symptomToAdd = selectedSymptom
+    if (!symptomToAdd.trim()) return
+
+    await axios.post(`/reasoning/${name}/symptoms`, { name: symptomToAdd }, {
       headers: { Authorization: `Bearer ${token}` }
     })
+    setSelectedGroup('')
+    setSelectedSymptom('')
     setNewSymptom('')
     await fetchSymptoms()
     await fetchReasoning()
@@ -109,14 +127,40 @@ export default function PlantDetails() {
             </div>
           )}
 
-          <form onSubmit={addSymptom} className="mt-4 flex gap-2">
-            <input
-              value={newSymptom}
-              onChange={e => setNewSymptom(e.target.value)}
-              placeholder="Нов симптом"
-              className="border p-2 flex-1"
-            />
-            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+          {/* Селектор на категории и симптоми */}
+          <form onSubmit={addSymptom} className="mt-4 space-y-2">
+            <select
+              value={selectedGroup}
+              onChange={(e) => {
+                setSelectedGroup(e.target.value)
+                setSelectedSymptom('')
+              }}
+              className="border p-2 w-full"
+            >
+              <option value="">Избери категория</option>
+              {Object.keys(symptomOptions).map(group => (
+                <option key={group} value={group}>{group}</option>
+              ))}
+            </select>
+
+            {selectedGroup && (
+              <select
+                value={selectedSymptom}
+                onChange={(e) => setSelectedSymptom(e.target.value)}
+                className="border p-2 w-full"
+              >
+                <option value="">Избери симптом</option>
+                {symptomOptions[selectedGroup].map(symptom => (
+                  <option key={symptom} value={symptom}>{symptom}</option>
+                ))}
+              </select>
+            )}
+
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-4 py-2 rounded"
+              disabled={!selectedSymptom}
+            >
               Добави
             </button>
           </form>
@@ -124,37 +168,27 @@ export default function PlantDetails() {
       )}
 
       {tab === 'reasoning' && (
-        <div className="space-y-2">
-          {reasoning.length === 0 ? (
-            <p>Няма съвети към момента.</p>
-          ) : (
+        <div className="space-y-4">
+          <div>
+            <h3 className="font-semibold">Симптоми</h3>
             <ul className="list-disc list-inside">
-             {tab === 'reasoning' && (
-  <div className="space-y-4">
-    <div>
-      <h3 className="font-semibold">Симптоми</h3>
-      <ul className="list-disc list-inside">
-        {reasoning.symptoms?.map((s, i) => <li key={i}>{s}</li>)}
-      </ul>
-    </div>
-
-    <div>
-      <h3 className="font-semibold">Причини</h3>
-      <ul className="list-disc list-inside">
-        {reasoning.causes?.map((c, i) => <li key={i}>{c}</li>)}
-      </ul>
-    </div>
-
-    <div>
-      <h3 className="font-semibold">Препоръки</h3>
-      <ul className="list-disc list-inside">
-        {reasoning.careActions?.map((a, i) => <li key={i}>{a}</li>)}
-      </ul>
-    </div>
-  </div>
-)}
+              {reasoning.symptoms?.map((s, i) => <li key={i}>{s}</li>)}
             </ul>
-          )}
+          </div>
+
+          <div>
+            <h3 className="font-semibold">Причини</h3>
+            <ul className="list-disc list-inside">
+              {reasoning.causes?.map((c, i) => <li key={i}>{c}</li>)}
+            </ul>
+          </div>
+
+          <div>
+            <h3 className="font-semibold">Препоръки</h3>
+            <ul className="list-disc list-inside">
+              {reasoning.careActions?.map((a, i) => <li key={i}>{a}</li>)}
+            </ul>
+          </div>
         </div>
       )}
     </div>

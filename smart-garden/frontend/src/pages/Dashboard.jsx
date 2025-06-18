@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom'
 export default function Dashboard() {
   const { token } = useAuth()
   const [plants, setPlants] = useState([])
+  const [plantTypes, setPlantTypes] = useState([])
   const [form, setForm] = useState({
     name: '',
     type: '',
@@ -15,6 +16,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchPlants()
+    fetchPlantTypes()
   }, [])
 
   const fetchPlants = async () => {
@@ -27,6 +29,18 @@ export default function Dashboard() {
       console.error('Грешка при зареждане на растенията:', err)
     }
   }
+
+const fetchPlantTypes = async () => {
+  try {
+    const res = await axios.get('/plants/types', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    setPlantTypes(res.data)
+  } catch (err) {
+    console.error('Грешка при зареждане на типовете растения:', err)
+  }
+}
+
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -62,12 +76,21 @@ export default function Dashboard() {
       <h1 className="text-3xl font-bold">Твоите растения 🌱</h1>
 
       {/* Форма */}
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <input name="name" placeholder="Име на растение" value={form.name} onChange={handleChange} className="border p-2" />
-        <input name="type" placeholder="Тип растение" value={form.type} onChange={handleChange} className="border p-2" />
-        <input name="imageUrl" placeholder="Снимка (URL)" value={form.imageUrl} onChange={handleChange} className="border p-2" />
-        <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded col-span-full md:col-span-1">Създай</button>
-      </form>
+     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <input name="name" placeholder="Име на растение" value={form.name} onChange={handleChange} className="border p-2" />
+  
+  <select name="type" value={form.type} onChange={handleChange} className="border p-2">
+    <option value="">Избери тип растение</option>
+    {plantTypes.map(type => (
+      <option key={type} value={type}>{type}</option>
+    ))}
+  </select>
+
+  <input name="imageUrl" placeholder="Снимка (URL)" value={form.imageUrl} onChange={handleChange} className="border p-2" />
+  
+  <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded col-span-full md:col-span-1">Създай</button>
+</form>
+
 
       {/* Графика */}
       {plants.length > 0 && <PlantChart plants={plants} />}

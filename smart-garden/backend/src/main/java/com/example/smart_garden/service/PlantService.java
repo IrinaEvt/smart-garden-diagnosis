@@ -58,6 +58,14 @@ public class PlantService {
         }
     }
 
+    public Map<String, List<String>> getSymptomOptionsGrouped() {
+        return ontology.getAllSymptomsGroupedByCategory();
+    }
+
+    public List<String> getAllPlantTypes() {
+        return ontology.getAllPlantTypes();
+    }
+
     public List<String> getReasoning(String plantName) {
         return ontology.getAdviceForPlantIndividual(plantName);
     }

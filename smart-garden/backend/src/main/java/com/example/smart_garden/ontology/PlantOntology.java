@@ -90,75 +90,69 @@ public class PlantOntology {
         reloadReasoner();
     }
 
+    public List<String> getAllPlantTypes() {
+        OWLClass plantClass = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + "Plant"));
 
-  /*  public List<String> getAdviceForPlantIndividual(String plantIndivName) {
-        List<String> result = new ArrayList<>();
-        OWLNamedIndividual plantIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + plantIndivName));
-        OWLObjectProperty hasSymptom = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasSymptom"));
+        Set<OWLClass> subclasses = reasoner.getSubClasses(plantClass, true)
+                .getFlattened();
 
-        for (OWLObjectPropertyAssertionAxiom ax : plantOntology.getObjectPropertyAssertionAxioms(plantIndiv)) {
-            if (ax.getProperty().asOWLObjectProperty().equals(hasSymptom)) {
-                OWLNamedIndividual symptomIndiv = ax.getObject().asOWLNamedIndividual();
-                result.add("Симптом: " + getIndividualFriendlyName(symptomIndiv.getIRI()));
+        return subclasses.stream()
+                .filter(cls -> !cls.isOWLNothing()) // игнорирай owl:Nothing
+                .map(this::getClassFriendlyName)
+                .sorted()
+                .toList();
+    }
 
-                Set<OWLClass> symptomTypes = reasoner.getTypes(symptomIndiv, true).getFlattened();
-                for (OWLClass symptomClass : symptomTypes) {
-                    for (OWLSubClassOfAxiom sa : plantOntology.getSubClassAxiomsForSubClass(symptomClass)) {
-                        if (sa.getSuperClass() instanceof OWLObjectSomeValuesFrom) {
-                            OWLObjectSomeValuesFrom restriction = (OWLObjectSomeValuesFrom) sa.getSuperClass();
-                            OWLObjectPropertyExpression prop = restriction.getProperty();
-                            OWLClassExpression filler = restriction.getFiller();
+    public Map<String, List<String>> getAllSymptomsGroupedByCategory() {
+        Map<String, List<String>> result = new LinkedHashMap<>();
+        OWLClass baseSymptomClass = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + "Symptom"));
 
-                            if (!filler.isAnonymous()) {
-                                String propName = getClassFriendlyName(dataFactory.getOWLClass(prop.getNamedProperty().getIRI()));
-                                String causeName = getClassFriendlyName(filler.asOWLClass());
+        Set<OWLClass> allSymptoms = reasoner.getSubClasses(baseSymptomClass, false).getFlattened();
 
-                                if (propName.toLowerCase().contains("cause")) {
-                                    result.add("Възможна причина: " + causeName);
+        for (OWLClass parentCategory : allSymptoms) {
+            if (parentCategory.isOWLNothing()) continue;
 
-                                    // Разширение: търси care actions за тази причина
-                                    OWLClass causeClass = filler.asOWLClass();
-                                    for (OWLSubClassOfAxiom ca : plantOntology.getSubClassAxiomsForSubClass(causeClass)) {
-                                        if (ca.getSuperClass() instanceof OWLObjectSomeValuesFrom) {
-                                            OWLObjectSomeValuesFrom actionRestriction = (OWLObjectSomeValuesFrom) ca.getSuperClass();
-                                            OWLObjectProperty actionProp = actionRestriction.getProperty().asOWLObjectProperty();
-                                            OWLClassExpression actionExpr = actionRestriction.getFiller();
+            Set<OWLClass> subSymptoms = reasoner.getSubClasses(parentCategory, false).getFlattened();
 
-                                            if (!actionExpr.isAnonymous()) {
-                                                OWLClass actionClass = actionExpr.asOWLClass();
-                                                String actionPropName = getClassFriendlyName(dataFactory.getOWLClass(actionProp.getIRI()));
-                                                String actionClassName = getClassFriendlyName(actionClass);
+            for (OWLClass subCategory : subSymptoms) {
+                if (subCategory.isOWLNothing()) continue;
 
-                                                if (actionPropName.toLowerCase().contains("care") || actionPropName.toLowerCase().contains("treat")) {
-                                                    // Потърси индивидуал от този клас (ако има)
-                                                    boolean found = false;
-                                                    for (OWLNamedIndividual indiv : plantOntology.getIndividualsInSignature()) {
-                                                        for (OWLClassExpression t : reasoner.getTypes(indiv, true).getFlattened()) {
-                                                            if (!t.isAnonymous() && t.asOWLClass().equals(actionClass)) {
-                                                                result.add("Препоръчано действие: " + getIndividualFriendlyName(indiv.getIRI()));
-                                                                found = true;
-                                                            }
-                                                        }
-                                                    }
-                                                    if (!found) {
-                                                        // Върни името на класа като fallback
-                                                        result.add("Препоръчано действие: " + actionClassName);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                Set<OWLClass> leafSymptoms = reasoner.getSubClasses(subCategory, true).getFlattened();
+                List<String> names = new ArrayList<>();
+
+                for (OWLClass cls : leafSymptoms) {
+                    if (!cls.isOWLNothing()) {
+                        names.add(getClassFriendlyName(cls));
                     }
                 }
+
+                if (!names.isEmpty()) {
+                    String label = getClassFriendlyName(parentCategory) + " / " + getClassFriendlyName(subCategory);
+                    result.put(label, names);
+                }
+            }
+
+            // Ако няма подкатегории, взимаме директно "крайните"
+            Set<OWLClass> directLeafs = reasoner.getSubClasses(parentCategory, true).getFlattened();
+            List<String> directNames = new ArrayList<>();
+
+            for (OWLClass cls : directLeafs) {
+                if (!cls.isOWLNothing() && !result.containsKey(getClassFriendlyName(cls))) {
+                    directNames.add(getClassFriendlyName(cls));
+                }
+            }
+
+            if (!directNames.isEmpty()) {
+                result.put(getClassFriendlyName(parentCategory), directNames);
             }
         }
+
         return result;
     }
 
-   */
+
+
+
 
     public List<String> getAdviceForPlantIndividual(String plantIndivName) {
         List<String> result = new ArrayList<>();

@@ -73,17 +73,22 @@ public class ReasoningController {
 
     @GetMapping("/{plantName}/symptoms")
     public List<SymptomEntity> getSymptoms(
-            @AuthenticationPrincipal UserDetails userDetails,  // 👈 добавено
+            @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable String plantName) {
         return symptomService.getSymptomsByPlant(plantName);
     }
 
     @DeleteMapping("/{plantName}/symptoms/{symptomId}")
     public ResponseEntity<?> deleteSymptom(
-            @AuthenticationPrincipal UserDetails userDetails,  // 👈 добавено
+            @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable String plantName,
             @PathVariable Long symptomId) {
         symptomService.deleteSymptomById(symptomId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/symptom-options")
+    public Map<String, List<String>> getSymptomOptions(@AuthenticationPrincipal UserDetails userDetails) {
+        return plantService.getSymptomOptionsGrouped();
     }
 }
