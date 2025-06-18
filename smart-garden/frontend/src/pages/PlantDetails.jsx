@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import axios from '../api/axios'
 import { useAuth } from '../auth/AuthContext'
+import SensorChart from '../components/SensorChart'
 
 export default function PlantDetails() {
   const { name } = useParams()
@@ -16,6 +17,9 @@ export default function PlantDetails() {
   const [selectedGroup, setSelectedGroup] = useState('')
   const [selectedSymptom, setSelectedSymptom] = useState('')
   const [newSymptom, setNewSymptom] = useState('')
+  const [sensorHistory, setSensorHistory] = useState([])
+const [sensorAlerts, setSensorAlerts] = useState([])
+
 
   useEffect(() => {
     fetchPlant()
@@ -30,6 +34,21 @@ export default function PlantDetails() {
     })
     setPlant(res.data)
   }
+
+  const fetchSensorHistory = async () => {
+  const res = await axios.get(`/plants/${name}/sensors/history`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+
+    const parsedReadings = res.data.readings.map(reading => ({
+    ...reading,
+    readingValue: parseFloat(reading.readingValue)
+  }))
+
+  setSensorHistory(res.data.readings)
+  setSensorAlerts(res.data.alerts)
+}
+
 
   const fetchSymptoms = async () => {
     const res = await axios.get(`/reasoning/${name}/symptoms`, {
@@ -112,6 +131,27 @@ export default function PlantDetails() {
           <p><strong>Светлина:</strong> {plant.light}</p>
           <p><strong>Влажност:</strong> {plant.humidity}</p>
           <p><strong>Почвена влажност:</strong> {plant.soilMoisture}</p>
+
+          <div className="mt-6 space-y-4">
+  <h2 className="text-xl font-bold">📊 Сензорни стойности</h2>
+  <button onClick={fetchSensorHistory} className="bg-gray-200 px-4 py-2 rounded">📡 Обнови сензори</button>
+
+  {sensorAlerts.length > 0 ? (
+    <div className="text-red-600">
+      <h4 className="font-semibold">⚠️ Проблеми:</h4>
+      <ul className="list-disc list-inside">
+        {sensorAlerts.map((alert, i) => <li key={i}>{alert}</li>)}
+      </ul>
+    </div>
+  ) : (
+    <p className="text-green-600">✅ Всичко е в норма!</p>
+  )}
+
+  {["temperature", "light", "humidity", "soilMoisture"].map(param => (
+    <SensorChart key={param} parameter={param} data={sensorHistory} />
+  ))}
+</div>
+
 
           {symptoms.length > 0 && (
             <div>

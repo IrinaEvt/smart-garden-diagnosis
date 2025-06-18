@@ -1,6 +1,7 @@
 package com.example.smart_garden.ontology;
 
 import com.example.smart_garden.models.Plant;
+import com.example.smart_garden.service.NeedRange;
 import org.semanticweb.HermiT.ReasonerFactory;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.*;
@@ -269,10 +270,17 @@ public class PlantOntology {
                     if (!filler.isAnonymous()) {
                         String needName = getClassFriendlyName(filler.asOWLClass());
 
-                        if (needName.contains("Water")) result.put("soilMoisture", needName.contains("Frequent") ? "high" : "low");
-                        if (needName.contains("Humidity")) result.put("humidity", needName.contains("High") ? "high" : "low");
-                        if (needName.contains("Light")) result.put("light", needName.contains("High") ? "high" : "low");
-                        if (needName.contains("Temperature")) result.put("temperature", needName.contains("High") ? "high" : "low");
+                        if (needName.contains("Water"))
+                            result.put("soilMoisture", needName.contains("Frequent") ? "high" : "low");
+
+                        if (needName.contains("Humidity"))
+                            result.put("humidity", needName.contains("High") ? "high" : "low");
+
+                        if (needName.contains("Light"))
+                            result.put("light", needName.contains("High") ? "high" : "low");
+
+                        if (needName.contains("Temperature"))
+                            result.put("temperature", needName.contains("High")  ? "high" : "low");
                     }
                 }
             }

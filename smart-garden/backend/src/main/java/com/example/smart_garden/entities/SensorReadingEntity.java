@@ -9,8 +9,12 @@ public class SensorReadingEntity {
     @GeneratedValue
     private Long id;
 
-    private String parameter; // "temperature", "light", "humidity", "soilMoisture"
-    private String value;     // "low", "medium", "high"
+    private String parameter;
+
+
+    private double readingValue;
+
+
     private LocalDateTime timestamp;
 
     @ManyToOne
@@ -26,8 +30,13 @@ public class SensorReadingEntity {
     public String getParameter() { return parameter; }
     public void setParameter(String parameter) { this.parameter = parameter; }
 
-    public String getValue() { return value; }
-    public void setValue(String value) { this.value = value; }
+    public double getReadingValue() {
+        return readingValue;
+    }
+
+    public void setReadingValue(double readingValue) {
+        this.readingValue = readingValue;
+    }
 
     public LocalDateTime getTimestamp() { return timestamp; }
     public void setTimestamp(LocalDateTime timestamp) { this.timestamp = timestamp; }

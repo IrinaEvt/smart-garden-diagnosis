@@ -1,6 +1,7 @@
 package com.example.smart_garden.entities;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.JoinColumn;
@@ -15,6 +16,7 @@ public class SymptomEntity {
 
     private String name;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "plant_name")
     private PlantEntity plant;

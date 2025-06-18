@@ -2,6 +2,7 @@ package com.example.smart_garden.entities;
 
 
 import com.example.smart_garden.models.Plant;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 import java.util.List;

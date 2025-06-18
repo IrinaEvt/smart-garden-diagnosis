@@ -9,10 +9,7 @@ import com.example.smart_garden.repositories.PlantRepository;
 import com.example.smart_garden.repositories.SymptomRepository;
 import org.springframework.stereotype.Service;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class PlantService {
@@ -25,6 +22,17 @@ public class PlantService {
         this.symptomRepo = symptomRepo;
         this.ontology = new PlantOntology();
     }
+
+    private NeedRange interpretRange(String level, String parameter) {
+        return switch (parameter) {
+            case "temperature" -> "high".equalsIgnoreCase(level) ? new NeedRange(22, 28) : new NeedRange(16, 22);
+            case "light"       -> "high".equalsIgnoreCase(level) ? new NeedRange(600, 1000) : new NeedRange(200, 600);
+            case "humidity"    -> "high".equalsIgnoreCase(level) ? new NeedRange(60, 80) : new NeedRange(30, 60);
+            case "soilMoisture"-> "high".equalsIgnoreCase(level) ? new NeedRange(50, 80) : new NeedRange(20, 50);
+            default -> new NeedRange(0, 0); // fallback
+        };
+    }
+
 
 
     public PlantEntity savePlant(PlantEntity plant, UserEntity user) {
@@ -90,8 +98,41 @@ public class PlantService {
         }
         return false;
     }
+    public PlantEntity findByIdOrThrow(String name) {
+        return plantRepo.findById(name)
+                .orElseThrow(() -> new RuntimeException("Plant not found: " + name));
+    }
 
     public Optional<PlantEntity> getPlantByName(String name) {
         return plantRepo.findById(name);
     }
+
+    public List<String> evaluatePlantHealth(PlantEntity plant, Map<String, Double> sensorData) {
+        List<String> alerts = new ArrayList<>();
+
+        if (sensorData == null || sensorData.isEmpty()) {
+            alerts.add("❗ Липсват данни от сензорите.");
+            return alerts;
+        }
+
+        checkParameter(alerts, "temperature", plant.getTemperature(), sensorData.get("temperature"));
+        checkParameter(alerts, "light", plant.getLight(), sensorData.get("light"));
+        checkParameter(alerts, "humidity", plant.getHumidity(), sensorData.get("humidity"));
+        checkParameter(alerts, "soilMoisture", plant.getSoilMoisture(), sensorData.get("soilMoisture"));
+
+        return alerts;
+    }
+
+    private void checkParameter(List<String> alerts, String paramName, String expectedLevel, Double actualValue) {
+        NeedRange range = interpretRange(expectedLevel, paramName);
+        if (!range.isInRange(actualValue)) {
+            alerts.add("❗ Несъответствие в " + paramName +
+                    ": нужно '" + expectedLevel +
+                    "', стойност: " + actualValue);
+        }
+    }
+
+
+
+
 }
