@@ -53,15 +53,34 @@ public class PlantOntology {
     }
 
     public void createPlantIndividual(Plant plant) {
+        String familyName = plant.getFamily();  // ВЗИМАМЕ СЕМЕЙСТВОТО ОТ МОДЕЛА
+
         OWLNamedIndividual plantIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + plant.getName()));
         OWLClass plantType = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + plant.getType()));
+        OWLClass familyClass = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + familyName));
+
+        // Добавяне на класове, ако не съществуват
         if (!plantOntology.containsClassInSignature(plantType.getIRI())) {
             OWLDeclarationAxiom declareClass = dataFactory.getOWLDeclarationAxiom(plantType);
             ontoManager.applyChange(new AddAxiom(plantOntology, declareClass));
         }
+
+        if (!plantOntology.containsClassInSignature(familyClass.getIRI())) {
+            OWLDeclarationAxiom declareFamilyClass = dataFactory.getOWLDeclarationAxiom(familyClass);
+            ontoManager.applyChange(new AddAxiom(plantOntology, declareFamilyClass));
+        }
+
+        // Установяване на йерархията: plantType SubClassOf familyClass
+        OWLSubClassOfAxiom hierarchyAxiom = dataFactory.getOWLSubClassOfAxiom(plantType, familyClass);
+        if (!plantOntology.containsAxiom(hierarchyAxiom)) {
+            ontoManager.applyChange(new AddAxiom(plantOntology, hierarchyAxiom));
+        }
+
+        // Индивид от тип растение
         OWLClassAssertionAxiom axPlant = dataFactory.getOWLClassAssertionAxiom(plantType, plantIndiv);
         ontoManager.applyChange(new AddAxiom(plantOntology, axPlant));
     }
+
 
     public void createSymptomForPlant(String plantName, String symptomName) {
         OWLNamedIndividual plantIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + plantName));
@@ -94,15 +113,26 @@ public class PlantOntology {
     public List<String> getAllPlantTypes() {
         OWLClass plantClass = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + "Plant"));
 
-        Set<OWLClass> subclasses = reasoner.getSubClasses(plantClass, true)
-                .getFlattened();
+        Set<OWLClass> families = reasoner.getSubClasses(plantClass, true).getFlattened();
+        Set<OWLClass> plantTypes = new HashSet<>();
 
-        return subclasses.stream()
-                .filter(cls -> !cls.isOWLNothing()) // игнорирай owl:Nothing
+        for (OWLClass family : families) {
+            if (!family.isOWLNothing()) {
+                Set<OWLClass> types = reasoner.getSubClasses(family, true).getFlattened();
+                for (OWLClass type : types) {
+                    if (!type.isOWLNothing()) {
+                        plantTypes.add(type);
+                    }
+                }
+            }
+        }
+
+        return plantTypes.stream()
                 .map(this::getClassFriendlyName)
                 .sorted()
                 .toList();
     }
+
 
     public Map<String, List<String>> getAllSymptomsGroupedByCategory() {
         Map<String, List<String>> result = new LinkedHashMap<>();
@@ -145,6 +175,60 @@ public class PlantOntology {
 
             if (!directNames.isEmpty()) {
                 result.put(getClassFriendlyName(parentCategory), directNames);
+            }
+        }
+
+        return result;
+    }
+
+
+
+    public List<String> suggestPlantsFromSameFamily(String plantTypeName) {
+        List<String> suggestions = new ArrayList<>();
+
+        // Намиране на класа на растението
+        OWLClass targetPlantClass = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + plantTypeName));
+
+        // Извличане на родителския клас (семейство) чрез reasoner
+        Set<OWLClass> superClasses = reasoner.getSuperClasses(targetPlantClass, true).getFlattened();
+
+        for (OWLClass familyClass : superClasses) {
+            if (!familyClass.isOWLNothing()) {
+                // Взимаме всички под-класове на същото семейство (растения)
+                Set<OWLClass> siblingPlants = reasoner.getSubClasses(familyClass, true).getFlattened();
+                for (OWLClass sibling : siblingPlants) {
+                    String siblingName = getClassFriendlyName(sibling);
+                    if (!siblingName.equals(plantTypeName) && !sibling.isOWLNothing()) {
+                        suggestions.add(siblingName);
+                    }
+                }
+            }
+        }
+
+        return suggestions;
+    }
+
+    public List<Map<String, String>> getAllPlantTypesWithFamilies() {
+        List<Map<String, String>> result = new ArrayList<>();
+
+        OWLClass plantClass = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + "Plant"));
+        Set<OWLClass> families = reasoner.getSubClasses(plantClass, true).getFlattened();
+
+        for (OWLClass familyClass : families) {
+            if (familyClass.isOWLNothing()) continue;
+            String familyName = getClassFriendlyName(familyClass);
+            System.out.println(" -> Семейство: " + familyName);
+
+            Set<OWLClass> types = reasoner.getSubClasses(familyClass, true).getFlattened();
+            for (OWLClass typeClass : types) {
+                if (typeClass.isOWLNothing()) continue;
+                String typeName = getClassFriendlyName(typeClass);
+                System.out.println("    -> Тип: " + typeName);
+
+                Map<String, String> entry = new HashMap<>();
+                entry.put("type", typeName);
+                entry.put("family", familyName);
+                result.add(entry);
             }
         }
 
@@ -261,26 +345,31 @@ public class PlantOntology {
         OWLClass plantClass = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + typeName));
         OWLObjectProperty hasNeed = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasNeed"));
 
-        for (OWLSubClassOfAxiom ax : plantOntology.getSubClassAxiomsForSubClass(plantClass)) {
-            if (ax.getSuperClass() instanceof OWLObjectExactCardinality) {
-                OWLObjectExactCardinality restriction = (OWLObjectExactCardinality) ax.getSuperClass();
-                if (restriction.getProperty().asOWLObjectProperty().equals(hasNeed)) {
-                    OWLClassExpression filler = restriction.getFiller();
+        // Събиране на всички надкласове включително самия клас
+        Set<OWLClass> hierarchy = reasoner.getSuperClasses(plantClass, false).getFlattened();
+        hierarchy.add(plantClass);
 
-                    if (!filler.isAnonymous()) {
-                        String needName = getClassFriendlyName(filler.asOWLClass());
+        for (OWLClass currentClass : hierarchy) {
+            for (OWLSubClassOfAxiom ax : plantOntology.getSubClassAxiomsForSubClass(currentClass)) {
+                if (ax.getSuperClass() instanceof OWLObjectExactCardinality restriction) {
+                    if (restriction.getProperty().asOWLObjectProperty().equals(hasNeed)) {
+                        OWLClassExpression filler = restriction.getFiller();
 
-                        if (needName.contains("Water"))
-                            result.put("soilMoisture", needName.contains("Frequent") ? "high" : "low");
+                        if (!filler.isAnonymous()) {
+                            String needName = getClassFriendlyName(filler.asOWLClass());
 
-                        if (needName.contains("Humidity"))
-                            result.put("humidity", needName.contains("High") ? "high" : "low");
+                            if (needName.contains("Water"))
+                                result.put("soilMoisture", needName.contains("Frequent") ? "high" : "low");
 
-                        if (needName.contains("Light"))
-                            result.put("light", needName.contains("High") ? "high" : "low");
+                            if (needName.contains("Humidity"))
+                                result.put("humidity", needName.contains("High") ? "high" : "low");
 
-                        if (needName.contains("Temperature"))
-                            result.put("temperature", needName.contains("High")  ? "high" : "low");
+                            if (needName.contains("Light"))
+                                result.put("light", needName.contains("High") ? "high" : "low");
+
+                            if (needName.contains("Temperature"))
+                                result.put("temperature", needName.contains("High") ? "high" : "low");
+                        }
                     }
                 }
             }
@@ -289,33 +378,8 @@ public class PlantOntology {
         return result;
     }
 
-    public List<String> getNeedsForPlant(String plantIndivName) {
-        List<String> result = new ArrayList<>();
-        OWLNamedIndividual plant = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + plantIndivName));
-        OWLObjectProperty hasNeed = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasNeed"));
 
-        for (OWLObjectPropertyAssertionAxiom ax : plantOntology.getObjectPropertyAssertionAxioms(plant)) {
-            if (ax.getProperty().asOWLObjectProperty().equals(hasNeed)) {
-                OWLNamedIndividual needIndiv = ax.getObject().asOWLNamedIndividual();
-                StringBuilder sb = new StringBuilder();
-                sb.append("Нужда: ").append(getIndividualFriendlyName(needIndiv.getIRI()));
 
-                Set<OWLClass> types = reasoner.getTypes(needIndiv, true).getFlattened();
-                for (OWLClass type : types) {
-                    sb.append(" от тип ").append(getClassFriendlyName(type));
-                }
-
-                for (OWLDataPropertyAssertionAxiom dp : plantOntology.getDataPropertyAssertionAxioms(needIndiv)) {
-                    OWLDataProperty property = dp.getProperty().asOWLDataProperty();
-                    String propName = getIndividualFriendlyName(property.getIRI());
-                    sb.append(" | ").append(propName).append(" = ").append(dp.getObject());
-                }
-
-                result.add(sb.toString());
-            }
-        }
-        return result;
-    }
 
     public Plant getPlantByIndividualName(String plantIndivName) {
         Plant plantModel = new Plant();

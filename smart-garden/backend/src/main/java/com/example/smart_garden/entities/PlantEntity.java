@@ -18,6 +18,7 @@ public class PlantEntity {
     private String humidity;
     private String soilMoisture;
     private String imageUrl;
+    private String family;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -43,6 +44,14 @@ public class PlantEntity {
         }
 
         return plant;
+    }
+
+    public String getFamily() {
+        return family;
+    }
+
+    public void setFamily(String family) {
+        this.family = family;
     }
 
     public String getName() {

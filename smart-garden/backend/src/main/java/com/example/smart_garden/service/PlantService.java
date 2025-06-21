@@ -70,8 +70,8 @@ public class PlantService {
         return ontology.getAllSymptomsGroupedByCategory();
     }
 
-    public List<String> getAllPlantTypes() {
-        return ontology.getAllPlantTypes();
+    public List<Map<String, String>> getAllPlantTypes() {
+        return ontology.getAllPlantTypesWithFamilies();
     }
 
     public List<String> getReasoning(String plantName) {

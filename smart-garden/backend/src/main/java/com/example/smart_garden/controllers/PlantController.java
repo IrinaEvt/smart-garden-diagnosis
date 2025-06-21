@@ -92,7 +92,7 @@ public class PlantController {
     }
 
     @GetMapping("/types")
-    public List<String> getAllPlantTypes(@AuthenticationPrincipal UserDetails userDetails) {
+    public List<Map<String, String>> getAllPlantTypes(@AuthenticationPrincipal UserDetails userDetails) {
         return plantService.getAllPlantTypes();
     }
 

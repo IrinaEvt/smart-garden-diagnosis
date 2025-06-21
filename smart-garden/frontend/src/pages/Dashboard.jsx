@@ -6,12 +6,15 @@ import SidebarNavigation from '../components/SidebarNavigation'
 
 export default function Dashboard() {
   const { token } = useAuth()
+  console.log("Токен:", token)
   const [plants, setPlants] = useState([])
-  const [plantTypes, setPlantTypes] = useState([])
+  const [plantTypes, setPlantTypes] = useState([]) // [{type, family}]
   const [showTypeSelector, setShowTypeSelector] = useState(false)
+
   const [form, setForm] = useState({
     name: '',
     type: '',
+    family: '',
     imageUrl: ''
   })
 
@@ -44,7 +47,8 @@ export default function Dashboard() {
       const res = await axios.get('/plants/types', {
         headers: { Authorization: `Bearer ${token}` }
       })
-      setPlantTypes(res.data)
+      console.log('Типове от сървъра:', res.data)
+      setPlantTypes(res.data) // [{ type: "", family: "" }]
     } catch (err) {
       console.error('Грешка при зареждане на типовете растения:', err)
     }
@@ -60,7 +64,7 @@ export default function Dashboard() {
       await axios.post('/plants', form, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      setForm({ name: '', type: '', imageUrl: '' })
+      setForm({ name: '', type: '', family: '', imageUrl: '' })
       fetchPlants()
     } catch (err) {
       alert('Неуспешно създаване на растение')
@@ -78,6 +82,13 @@ export default function Dashboard() {
       alert('Неуспешно изтриване')
     }
   }
+
+  // Групиране по семейство
+  const groupedByFamily = plantTypes.reduce((acc, { type, family }) => {
+    if (!acc[family]) acc[family] = []
+    acc[family].push(type)
+    return acc
+  }, {})
 
   return (
     <div className="flex bg-[#0f1e13] text-white min-h-screen">
@@ -117,33 +128,41 @@ export default function Dashboard() {
             </div>
 
             {showTypeSelector && (
-              <div className="absolute z-50 mt-2 bg-black border border-green-600 p-4 rounded shadow-lg grid grid-cols-2 md:grid-cols-3 gap-4">
-                {plantTypes.map((type) => {
-                  const selected = form.type === type
-                  return (
-                    <div
-                      key={type}
-                      onClick={() => {
-                        setForm({
-                          ...form,
-                          type,
-                          imageUrl: imageMap[type] || '/images/default.jpg'
-                        })
-                        setShowTypeSelector(false)
-                      }}
-                      className={`cursor-pointer p-2 rounded-lg border-2 transition duration-300 
-                        ${selected ? 'border-green-500 scale-[1.02]' : 'border-gray-600'} 
-                        hover:border-green-400 hover:scale-[1.02]`}
-                    >
-                      <img
-                        src={imageMap[type] || '/images/default.jpg'}
-                        alt={type}
-                        className="w-32 h-24 object-cover rounded"
-                      />
-                      <p className="mt-2 text-center text-white font-medium">{type}</p>
+              <div className="absolute z-50 mt-2 bg-black border border-green-600 p-4 rounded shadow-lg max-h-[400px] overflow-y-auto space-y-6 w-full md:w-[600px]">
+                {Object.entries(groupedByFamily).map(([family, types]) => (
+                  <div key={family}>
+                    <h3 className="text-green-400 text-sm mb-2 italic">{family}</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {types.map((type) => {
+                        const selected = form.type === type
+                        return (
+                          <div
+                            key={type}
+                            onClick={() => {
+                              setForm({
+                                ...form,
+                                type,
+                                family,
+                                imageUrl: imageMap[type] || '/images/default.jpg'
+                              })
+                              setShowTypeSelector(false)
+                            }}
+                            className={`cursor-pointer p-2 rounded-lg border-2 transition duration-300 
+                              ${selected ? 'border-green-500 scale-[1.02]' : 'border-gray-600'} 
+                              hover:border-green-400 hover:scale-[1.02]`}
+                          >
+                            <img
+                              src={imageMap[type] || '/images/default.jpg'}
+                              alt={type}
+                              className="w-32 h-24 object-cover rounded"
+                            />
+                            <p className="mt-2 text-center text-white font-medium">{type}</p>
+                          </div>
+                        )
+                      })}
                     </div>
-                  )
-                })}
+                  </div>
+                ))}
               </div>
             )}
           </div>
@@ -163,6 +182,8 @@ export default function Dashboard() {
                 />
                 <h2 className="text-xl font-bold">{p.name}</h2>
                 <p className="text-sm text-green-300">{p.type}</p>
+                <p className="text-xs text-green-500 italic">{p.family}</p>
+
                 <button
                   onClick={(e) => {
                     e.preventDefault()

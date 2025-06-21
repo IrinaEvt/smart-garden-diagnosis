@@ -14,20 +14,28 @@ public class Plant implements Serializable {
     private String humidity;          // e.g. 10–90
     private String light;             // e.g. 100–1000 (lux)
     private List<String> symptoms;
+    private String family;
 
     public Plant() {}
 
-    public Plant( String type, String name, String soilMoisture, String temperature, String humidity, String light,List<String> symptoms) {
+    public Plant( String type, String name, String soilMoisture, String temperature, String humidity, String light,List<String> symptoms, String family) {
         this.name = name;
         this.type = type;
         this.soilMoisture = soilMoisture;
         this.temperature = temperature;
         this.humidity = humidity;
         this.light = light;
+        this.family = family;
         this.symptoms = symptoms;
     }
 
+    public String getFamily() {
+        return family;
+    }
 
+    public void setFamily(String family) {
+        this.family = family;
+    }
 
     public String getType() {
         return type;
@@ -99,6 +107,7 @@ public class Plant implements Serializable {
         sb.append("Temperature: ").append(temperature).append("\n");
         sb.append("Light: ").append(light).append("\n");
         sb.append("Water: ").append(soilMoisture).append("\n");
+        sb.append("Family: ").append(family).append("\n");
         return sb.toString();
     }
 
