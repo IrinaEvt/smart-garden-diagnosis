@@ -1,11 +1,11 @@
-// src/api/axios.js
+
 import axios from 'axios'
 
 const instance = axios.create({
   baseURL: 'http://localhost:8081/api',
 })
 
-// Добавяне на Authorization хедър автоматично
+
 instance.interceptors.request.use((config) => {
   const token = localStorage.getItem('token')
   if (token) {
