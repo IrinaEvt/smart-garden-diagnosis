@@ -13,6 +13,7 @@ export default function PlantDetails() {
   const { token } = useAuth()
 
   const [plant, setPlant] = useState(null)
+  const [suggestions, setSuggestions] = useState([])
   const [symptoms, setSymptoms] = useState([])
   const [reasoning, setReasoning] = useState([])
   const [symptomOptions, setSymptomOptions] = useState({})
@@ -21,6 +22,16 @@ export default function PlantDetails() {
   const [selectedSymptom, setSelectedSymptom] = useState(null)
   const [sensorHistory, setSensorHistory] = useState([])
   const [sensorAlerts, setSensorAlerts] = useState([])
+  const [easySuggestion, setEasySuggestion] = useState(null)
+
+
+  const imageMap = {
+    "Cactus": "/images/cactus.png",
+    "Calathea": "/images/flower.jpg",
+    "Cyclamen": "/images/tree.jpg",
+    "Orchid": "/images/cactus.jpg",
+    "SnakePlant": "/images/fern.jpg"
+  }
 
   useEffect(() => {
     fetchPlant()
@@ -34,19 +45,56 @@ export default function PlantDetails() {
       headers: { Authorization: `Bearer ${token}` }
     })
     setPlant(res.data)
+    fetchSuggestions(res.data.type)
   }
 
-  const fetchSensorHistory = async () => {
-    const res = await axios.get(`/plants/${name}/sensors/history`, {
+  const fetchSuggestions = async (type) => {
+    try {
+      const res = await axios.get(`/plants/types/suggestions/${type}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setSuggestions(res.data)
+    } catch (err) {
+      console.error('Грешка при зареждане на предложенията:', err)
+    }
+  }
+
+const fetchSensorHistory = async () => {
+  const res = await axios.get(`/plants/${name}/sensors/history`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  const parsed = res.data.readings.map(r => ({
+    ...r,
+    readingValue: parseFloat(r.readingValue)
+  }))
+  setSensorHistory(parsed)
+  setSensorAlerts(res.data.alerts)
+
+  if (res.data.alerts.length > 2) {
+    fetchEasyCareSuggestion(res.data.alerts.length)
+  } else {
+    setEasySuggestion(null)
+  }
+}
+
+const fetchEasyCareSuggestion = async (issueCount) => {
+  try {
+    const res = await axios.get(`/plants/suggestions/easy-care?issueCount=${issueCount}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
-    const parsed = res.data.readings.map(r => ({
-      ...r,
-      readingValue: parseFloat(r.readingValue)
-    }))
-    setSensorHistory(parsed)
-    setSensorAlerts(res.data.alerts)
+    console.log("🔍 Suggested:", res.data) 
+
+    if (res.data && typeof res.data === 'string') {
+      setEasySuggestion(res.data)
+    } else {
+      setEasySuggestion(null)
+    }
+  } catch (err) {
+    console.error("Грешка при зареждане на лесно растение:", err)
   }
+}
+
+
 
   const fetchSymptoms = async () => {
     const res = await axios.get(`/reasoning/${name}/symptoms`, {
@@ -56,6 +104,21 @@ export default function PlantDetails() {
   }
 
   const fetchReasoning = async () => {
+  try {
+    const res = await axios.get(`/reasoning/${name}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    // 🟢 използвай само вътрешния масив
+    setReasoning(res.data.reasoning || []);
+  } catch (err) {
+    console.error('Грешка при зареждане на reasoning:', err);
+    setReasoning([]); // fallback
+  }
+}
+
+
+ /* const fetchReasoning = async () => {
     try {
       const res = await axios.get(`/reasoning/${name}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -64,7 +127,7 @@ export default function PlantDetails() {
     } catch (err) {
       console.error('Грешка при зареждане на reasoning:', err)
     }
-  }
+  }*/
 
   const fetchSymptomOptions = async () => {
     try {
@@ -136,18 +199,30 @@ export default function PlantDetails() {
               <div className="border-b border-green-800 pb-4">
                 <h3 className="text-lg font-semibold mb-2">Основна информация</h3>
                 <p><strong>Тип:</strong> {plant.type}</p>
+                <p><strong>Семейство:</strong> {plant.family}</p>
               </div>
 
-              <div className="border-b border-green-800 pb-4">
-                <h3 className="text-lg font-semibold mb-2">Условия за отглеждане</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <p><strong>Температура:</strong> {plant.temperature}</p>
-                  <p><strong>Светлина:</strong> {plant.light}</p>
-                  <p><strong>Влажност:</strong> {plant.humidity}</p>
-                  <p><strong>Почвена влажност:</strong> {plant.soilMoisture}</p>
+              {suggestions.length > 0 && (
+                <div className="border-b border-green-800 pb-4">
+                  <h3 className="text-lg font-semibold mb-4">
+                    🌱 Други растения от семейство <span className="italic text-green-400">{plant.family}</span>
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {suggestions.map((sugg, i) => (
+                      <div key={i} className="bg-[#16291e] border border-green-600 rounded-lg p-4 flex flex-col items-center text-center shadow hover:shadow-lg">
+                        <img
+                          src={imageMap[sugg] || '/images/default.jpg'}
+                          alt={sugg}
+                          className="w-32 h-24 object-cover rounded mb-2"
+                        />
+                        <p className="text-white font-medium">{sugg}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
+              {/* Симптоми и форма – остава непроменено */}
               {symptoms.length > 0 && (
                 <div className="border-b border-green-800 pb-4">
                   <h3 className="text-lg font-semibold mb-2">📋 История на симптомите</h3>
@@ -212,7 +287,6 @@ export default function PlantDetails() {
                     </Listbox>
                   )}
                 </div>
-
                 <button
                   type="submit"
                   className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 px-4 py-2 rounded-full font-semibold"
@@ -225,59 +299,82 @@ export default function PlantDetails() {
           </div>
         )}
 
+        {/* Tabs reasoning и sensors – не са променяни */}
         {tab === 'reasoning' && (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold">Симптоми</h3>
-              <ul className="list-disc list-inside">
-                {reasoning.symptoms?.map((s, i) => <li key={i}>{s}</li>)}
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold">Причини</h3>
-              <ul className="list-disc list-inside">
-                {reasoning.causes?.map((c, i) => <li key={i}>{c}</li>)}
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold">Препоръки</h3>
-              <ul className="list-disc list-inside">
-                {reasoning.careActions?.map((a, i) => <li key={i}>{a}</li>)}
-              </ul>
-            </div>
+  <div className="space-y-6">
+    {reasoning.length === 0 ? (
+      <p className="text-gray-400 italic">Няма съвети за показване.</p>
+    ) : (
+      reasoning.map((block, i) => (
+        <div key={i} className="bg-[#16291e] border border-green-700 rounded-xl p-4 shadow space-y-3">
+          <h3 className="text-xl font-semibold text-green-300">🧠 Възможна причина: {block.cause}</h3>
+
+          <div>
+            <h4 className="font-medium text-white">🔍 Свързани симптоми:</h4>
+            <ul className="list-disc list-inside ml-4 text-white">
+              {block.symptoms.map((s, idx) => (
+                <li key={idx}>{s}</li>
+              ))}
+            </ul>
           </div>
-        )}
+
+          {block.actions.length > 0 && (
+            <div>
+              <h4 className="font-medium text-white">💡 Препоръчани действия:</h4>
+              <ul className="list-disc list-inside ml-4 text-white">
+                {block.actions.map((a, idx) => (
+                  <li key={idx}>{a}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      ))
+    )}
+  </div>
+)}
+
 
         {tab === 'sensors' && (
-          <div className="space-y-6">
-            <div className="border-b border-green-800 pb-4">
-              <h3 className="text-lg font-semibold mb-2">📡 Сензорни стойности</h3>
-              <button
-                onClick={fetchSensorHistory}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-full text-sm"
-              >
-                Обнови сензори
-              </button>
+  <div className="space-y-6">
+    <div className="border-b border-green-800 pb-4">
+      <h3 className="text-lg font-semibold mb-2">📡 Сензорни стойности</h3>
+      <button
+        onClick={fetchSensorHistory}
+        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-full text-sm"
+      >
+        Обнови сензори
+      </button>
 
-              {sensorAlerts.length > 0 ? (
-                <div className="mt-4 text-red-400">
-                  <h4 className="font-medium">⚠️ Проблеми:</h4>
-                  <ul className="list-disc list-inside">
-                    {sensorAlerts.map((alert, i) => (
-                      <li key={i}>{alert}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <p className="text-green-400 mt-4">✅ Всичко е в норма!</p>
-              )}
-            </div>
-
-            {["temperature", "light", "humidity", "soilMoisture"].map(param => (
-              <SensorChart key={param} parameter={param} data={sensorHistory} />
+      {sensorAlerts.length > 0 ? (
+        <div className="mt-4 text-red-400">
+          <h4 className="font-medium">⚠️ Проблеми:</h4>
+          <ul className="list-disc list-inside">
+            {sensorAlerts.map((alert, i) => (
+              <li key={i}>{alert}</li>
             ))}
-          </div>
-        )}
+          </ul>
+        </div>
+      ) : (
+        <p className="text-green-400 mt-4">✅ Всичко е в норма!</p>
+      )}
+
+      {easySuggestion && (
+        <div className="mt-6 border-t border-green-800 pt-4">
+          <h3 className="text-lg font-semibold text-green-300">🌿 Препоръка</h3>
+          <p className="text-white mt-2">
+            Забелязахме, че растението има няколко проблеми със сензорите.
+            Може да обмислиш растение от клас <strong>{easySuggestion}</strong>, което е по-лесно за отглеждане. 🌱
+          </p>
+        </div>
+      )}
+    </div>
+
+    {["temperature", "light", "humidity", "soilMoisture"].map(param => (
+      <SensorChart key={param} parameter={param} data={sensorHistory} />
+    ))}
+  </div>
+)}
       </main>
     </div>
   )

@@ -8,7 +8,7 @@ export default function Dashboard() {
   const { token } = useAuth()
   console.log("Токен:", token)
   const [plants, setPlants] = useState([])
-  const [plantTypes, setPlantTypes] = useState([]) // [{type, family}]
+  const [plantTypes, setPlantTypes] = useState([]) 
   const [showTypeSelector, setShowTypeSelector] = useState(false)
 
   const [form, setForm] = useState({

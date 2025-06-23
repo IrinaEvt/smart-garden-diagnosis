@@ -74,7 +74,15 @@ public class PlantService {
         return ontology.getAllPlantTypesWithFamilies();
     }
 
-    public List<String> getReasoning(String plantName) {
+    public List<String> suggestPlantsFromSameFamily(String plantTypeName) {
+        return ontology.suggestPlantsFromSameFamily(plantTypeName);
+    }
+
+    public Optional<String> suggestEasyCarePlant() {
+        return ontology.suggestEasyCarePlant();
+    }
+
+    public List<ReasoningBlock> getReasoning(String plantName) {
         return ontology.getAdviceForPlantIndividual(plantName);
     }
 

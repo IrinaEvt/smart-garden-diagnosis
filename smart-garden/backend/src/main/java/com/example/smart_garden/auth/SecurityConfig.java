@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/api/reasoning/**").authenticated()
                         .requestMatchers("/api/plants/**").authenticated()
+                        .requestMatchers("/api/families/**").authenticated()
                         .anyRequest().denyAll()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

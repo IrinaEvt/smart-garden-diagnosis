@@ -2,16 +2,14 @@ package com.example.smart_garden.controllers;
 
 import com.example.smart_garden.entities.SymptomEntity;
 import com.example.smart_garden.service.PlantService;
+import com.example.smart_garden.service.ReasoningBlock;
 import com.example.smart_garden.service.SymptomService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/reasoning")
@@ -26,7 +24,7 @@ public class ReasoningController {
         this.symptomService = symptomService;
     }
 
-    @GetMapping("/{plantName}")
+    /*@GetMapping("/{plantName}")
     public ResponseEntity<Map<String, Object>> getReasoning(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable String plantName) {
@@ -59,7 +57,21 @@ public class ReasoningController {
         response.put("careActions", careActions);
 
         return ResponseEntity.ok(response);
+    }*/
+
+    @GetMapping("/{plantName}")
+    public ResponseEntity<Map<String, Object>> getReasoning(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable String plantName) {
+
+        List<ReasoningBlock> reasoning = plantService.getReasoning(plantName);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("reasoning", reasoning);
+
+        return ResponseEntity.ok(response);
     }
+
 
     @PostMapping("/{plantName}/symptoms")
     public ResponseEntity<Void> addSymptom(

@@ -2,16 +2,20 @@ package com.example.smart_garden.ontology;
 
 import com.example.smart_garden.models.Plant;
 import com.example.smart_garden.service.NeedRange;
+import com.example.smart_garden.service.ReasoningBlock;
 import org.semanticweb.HermiT.ReasonerFactory;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.model.*;
 import org.semanticweb.owlapi.reasoner.Node;
+import org.semanticweb.owlapi.reasoner.NodeSet;
 import org.semanticweb.owlapi.reasoner.OWLReasoner;
 import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
+import org.semanticweb.owlapi.search.EntitySearcher;
 import org.semanticweb.owlapi.util.OWLEntityRemover;
 
 import java.io.File;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class PlantOntology {
 
@@ -183,6 +187,9 @@ public class PlantOntology {
 
 
 
+
+
+
     public List<String> suggestPlantsFromSameFamily(String plantTypeName) {
         List<String> suggestions = new ArrayList<>();
 
@@ -239,7 +246,7 @@ public class PlantOntology {
 
 
 
-    public List<String> getAdviceForPlantIndividual(String plantIndivName) {
+  /*  public List<String> getAdviceForPlantIndividual(String plantIndivName) {
         List<String> result = new ArrayList<>();
         OWLNamedIndividual plantIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + plantIndivName));
         OWLObjectProperty hasSymptom = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasSymptom"));
@@ -318,7 +325,87 @@ public class PlantOntology {
         }
 
         return result;
+    }*/
+
+    public List<ReasoningBlock> getAdviceForPlantIndividual(String plantIndivName) {
+        List<ReasoningBlock> grouped = new ArrayList<>();
+        Map<String, ReasoningBlock> map = new LinkedHashMap<>();
+
+        OWLNamedIndividual plantIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + plantIndivName));
+        OWLObjectProperty hasSymptom = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasSymptom"));
+
+        for (OWLObjectPropertyAssertionAxiom ax : plantOntology.getObjectPropertyAssertionAxioms(plantIndiv)) {
+            if (ax.getProperty().equals(hasSymptom)) {
+                OWLNamedIndividual symptomIndiv = ax.getObject().asOWLNamedIndividual();
+                String symptomName = getIndividualFriendlyName(symptomIndiv.getIRI());
+
+                Set<OWLClass> symptomTypes = reasoner.getTypes(symptomIndiv, true).getFlattened();
+                for (OWLClass symptomClass : symptomTypes) {
+                    for (OWLSubClassOfAxiom sa : plantOntology.getSubClassAxiomsForSubClass(symptomClass)) {
+                        if (sa.getSuperClass() instanceof OWLObjectSomeValuesFrom restriction) {
+                            OWLObjectPropertyExpression prop = restriction.getProperty();
+                            OWLClassExpression filler = restriction.getFiller();
+
+                            if (!filler.isAnonymous()) {
+                                OWLClass causeClass = filler.asOWLClass();
+                                String causeName = getClassFriendlyName(causeClass);
+                                String propName = getClassFriendlyName(
+                                        dataFactory.getOWLClass(prop.asOWLObjectProperty().getIRI())
+                                );
+
+                                if (propName.toLowerCase().contains("cause")) {
+                                    ReasoningBlock block = map.computeIfAbsent(causeName, k -> {
+                                        ReasoningBlock b = new ReasoningBlock();
+                                        b.cause = causeName;
+                                        return b;
+                                    });
+
+                                    block.symptoms.add(symptomName);
+
+                                    for (OWLSubClassOfAxiom ca : plantOntology.getSubClassAxiomsForSubClass(causeClass)) {
+                                        if (ca.getSuperClass() instanceof OWLObjectSomeValuesFrom actionRestriction) {
+                                            OWLObjectProperty actionProp = actionRestriction.getProperty().asOWLObjectProperty();
+                                            OWLClassExpression actionExpr = actionRestriction.getFiller();
+
+                                            if (!actionExpr.isAnonymous()) {
+                                                OWLClass actionClass = actionExpr.asOWLClass();
+                                                String actionClassName = getClassFriendlyName(actionClass);
+                                                boolean found = false;
+
+                                                for (OWLNamedIndividual actionIndiv : plantOntology.getIndividualsInSignature()) {
+                                                    Set<OWLClass> types = reasoner.getTypes(actionIndiv, true).getFlattened();
+                                                    for (OWLClass t : types) {
+                                                        if (t.equals(actionClass)) {
+                                                            String name = getIndividualFriendlyName(actionIndiv.getIRI());
+                                                            String actionPropName = getClassFriendlyName(
+                                                                    dataFactory.getOWLClass(actionProp.getIRI()));
+                                                            if (actionPropName.toLowerCase().contains("care") ||
+                                                                    actionPropName.toLowerCase().contains("treat")) {
+                                                                block.actions.add(name);
+                                                                found = true;
+                                                            }
+                                                        }
+                                                    }
+                                                }
+
+                                                if (!found) {
+                                                    block.actions.add(actionClassName);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        grouped.addAll(map.values());
+        return grouped;
     }
+
 
 
 
@@ -338,6 +425,41 @@ public class PlantOntology {
 
         ontoManager.applyChanges(remover.getChanges());
     }
+
+    public Optional<String> suggestEasyCarePlant() {
+        OWLObjectProperty hasEaseOfCare = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasEaseOfCare"));
+        OWLClass easyClass = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + "Easy"));
+        OWLClass plantClass = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + "Plant"));
+
+        Set<OWLClass> plantTypes = reasoner.getSubClasses(plantClass, false).getFlattened();
+
+        for (OWLClass plantType : plantTypes) {
+            if (plantType.isOWLNothing()) continue;
+
+            Set<OWLClassExpression> superClasses = new HashSet<>(EntitySearcher.getSuperClasses(plantType, plantOntology));
+
+            for (OWLClassExpression expr : superClasses) {
+                if (expr instanceof OWLObjectSomeValuesFrom someValuesFrom) {
+                    if (someValuesFrom.getProperty().equals(hasEaseOfCare)
+                            && someValuesFrom.getFiller().equals(easyClass)) {
+                        return Optional.of(getClassFriendlyName(plantType));
+                    }
+                }
+
+                if (expr instanceof OWLObjectExactCardinality exact
+                        && exact.getProperty().equals(hasEaseOfCare)
+                        && exact.getCardinality() == 1
+                        && exact.getFiller().equals(easyClass)) {
+                    return Optional.of(getClassFriendlyName(plantType));
+                }
+            }
+        }
+
+        return Optional.empty();
+    }
+
+
+
 
     public Map<String, String> getNeedsFromPlantType(String typeName) {
         Map<String, String> result = new LinkedHashMap<>();

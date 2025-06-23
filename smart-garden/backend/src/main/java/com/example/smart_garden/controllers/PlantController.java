@@ -91,9 +91,24 @@ public class PlantController {
                 .orElse(ResponseEntity.status(403).build());
     }
 
+    @GetMapping("/suggestions/easy-care")
+    public ResponseEntity<String> suggestEasyCarePlant(@RequestParam int issueCount) {
+        if (issueCount <= 2) {
+            return ResponseEntity.noContent().build(); // без нужда от предложение
+        }
+        return plantService.suggestEasyCarePlant()
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
+    }
+
+
     @GetMapping("/types")
     public List<Map<String, String>> getAllPlantTypes(@AuthenticationPrincipal UserDetails userDetails) {
         return plantService.getAllPlantTypes();
+    }
+    @GetMapping("/types/suggestions/{typeName}")
+    public List<String> suggestPlants(@PathVariable String typeName) {
+        return plantService.suggestPlantsFromSameFamily(typeName);
     }
 
     @GetMapping("/symptoms")
