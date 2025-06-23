@@ -1,38 +1,98 @@
-// pages/SymptomsPage.jsx
+import { useEffect, useState } from 'react'
 import SidebarNavigation from '../components/SidebarNavigation'
+import axios from '../api/axios'
+import { AlertCircle, Leaf, Bug, Droplet, Info } from 'lucide-react'
 
-const symptoms = [
-  {
-    name: 'Пожълтели листа',
-    causes: ['Прекалено поливане', 'Липса на светлина'],
-    actions: ['Намали поливането', 'Премести растението на светло място']
-  },
-  {
-    name: 'Кафяви краища',
-    causes: ['Суха почва', 'Ниска влажност на въздуха'],
-    actions: ['Полей растението', 'Увеличи влажността с пулверизиране']
+export default function SymptomPage() {
+  const [symptoms, setSymptoms] = useState([])
+  const [filter, setFilter] = useState('All')
+
+  useEffect(() => {
+    fetchSymptoms()
+  }, [])
+
+  const fetchSymptoms = async () => {
+    try {
+      const res = await axios.get('/symptoms')
+      setSymptoms(res.data)
+    } catch (err) {
+      console.error('Грешка при зареждане на симптомите:', err)
+    }
   }
+
+  const filterOptions = [
+  { key: 'All', label: '🌍 Всички' },
+  { key: 'Leaf', label: '🌿 Листа' },
+  { key: 'Stem', label: '🧱 Стъбло' },
+  { key: 'Root', label: '🪱 Корени' },
 ]
 
-export default function SymptomsPage() {
+  const getIcon = (part) => {
+    switch (part) {
+      case 'Leaf': return <Leaf size={20} className="text-green-400" />
+      case 'Root': return <Droplet size={20} className="text-yellow-400" />
+      case 'Stem': return <Bug size={20} className="text-red-400" />
+      default: return <AlertCircle size={20} />
+    }
+  }
+
+  const filteredSymptoms = filter === 'All'
+    ? symptoms
+    : symptoms.filter(sym => sym.partAffected === filter)
+
+
+
   return (
     <div className="flex bg-[#0f1e13] text-white min-h-screen">
       <SidebarNavigation />
       <main className="flex-1 p-8 space-y-6">
-        <h1 className="text-3xl font-bold mb-4">🩺 Симптоми и причини</h1>
-        {symptoms.map((s, i) => (
-          <div key={i} className="border-b border-green-800 pb-4">
-            <h3 className="text-xl font-semibold">{s.name}</h3>
-            <p className="mt-2"><strong>Причини:</strong></p>
-            <ul className="list-disc list-inside text-green-300 ml-4">
-              {s.causes.map((c, j) => <li key={j}>{c}</li>)}
-            </ul>
-            <p className="mt-2"><strong>Препоръки:</strong></p>
-            <ul className="list-disc list-inside text-green-400 ml-4">
-              {s.actions.map((a, j) => <li key={j}>{a}</li>)}
-            </ul>
-          </div>
-        ))}
+        <h1 className="text-3xl font-bold mb-6">🦠 Симптоми при растенията</h1>
+
+        {/* Филтър по част от растението */}
+        <div className="flex gap-4 mb-6">
+      {filterOptions.map(({ key, label }) => (
+  <button
+    key={key}
+    onClick={() => setFilter(key)}
+    className={`px-4 py-1 rounded-full border ${
+      filter === key ? 'border-green-400 text-green-300 font-semibold' : 'border-gray-600 text-gray-400'
+    }`}
+  >
+    {label}
+  </button>
+))}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredSymptoms.map((symptom) => (
+            <div
+              key={symptom.id || `${symptom.symptomName}-${symptom.partAffected}`}
+              className="bg-black border border-green-700 rounded-2xl p-6 shadow hover:shadow-green-500/20 transition"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                {getIcon(symptom.partAffected)}
+                <h2 className="text-xl font-semibold">{symptom.symptomName}</h2>
+              </div>
+              <img
+                src={symptom.imageUrl || '/images/symptoms/default.jpg'}
+                alt={symptom.symptomName}
+                className="w-full h-40 object-cover rounded-xl mb-3 border border-green-600"
+              />
+              <p className="text-green-300 text-sm mb-2">{symptom.visualDescription}</p>
+              <div className="text-xs text-gray-400 flex justify-between items-center">
+                <span>📍 {symptom.partAffected}</span>
+                <span>
+                  {symptom.severity === 'High' ? '🔴 Сериозна' : symptom.severity === 'Medium' ? '🟡 Средна' : '🟢 Лека'}
+                </span>
+              </div>
+              <div className="mt-4 text-right">
+                <button className="inline-flex items-center gap-1 text-sm text-green-400 hover:underline">
+                  <Info size={16} /> Детайли
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </main>
     </div>
   )
