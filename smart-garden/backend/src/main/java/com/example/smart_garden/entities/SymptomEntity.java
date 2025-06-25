@@ -2,23 +2,19 @@ package com.example.smart_garden.entities;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 @Entity
 public class SymptomEntity {
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String name;
 
     @JsonIgnore
     @ManyToOne
-    @JoinColumn(name = "plant_name")
+    @JoinColumn(name = "plant_id")
     private PlantEntity plant;
 
     public Long getId() {

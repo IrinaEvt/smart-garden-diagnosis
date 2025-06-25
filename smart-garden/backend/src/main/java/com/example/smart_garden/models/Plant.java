@@ -18,7 +18,7 @@ public class Plant implements Serializable {
 
     public Plant() {}
 
-    public Plant( String type, String name, String soilMoisture, String temperature, String humidity, String light,List<String> symptoms, String family) {
+    public Plant(String type, String name, String soilMoisture, String temperature, String humidity, String light,List<String> symptoms, String family) {
         this.name = name;
         this.type = type;
         this.soilMoisture = soilMoisture;

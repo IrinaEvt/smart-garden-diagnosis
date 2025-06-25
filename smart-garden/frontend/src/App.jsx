@@ -19,7 +19,7 @@ function App() {
         </PrivateRoute>
       } />
       
-      <Route path="/plants/:name" element={
+      <Route path="/plants/:id" element={
         <PrivateRoute>
           <PlantDetails />
         </PrivateRoute>
@@ -36,7 +36,6 @@ function App() {
           <SymptomsPage />
         </PrivateRoute>
       } />
-
 
       {/* Пренасочване при невалиден път */}
       <Route path="*" element={<Navigate to="/" />} />

@@ -71,10 +71,10 @@ export default function Dashboard() {
     }
   }
 
-  const handleDelete = async (name) => {
+  const handleDelete = async (id, name) => {
     if (!confirm(`Сигурен ли си, че искаш да изтриеш "${name}"?`)) return
     try {
-      await axios.delete(`/plants/${name}`, {
+      await axios.delete(`/plants/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       fetchPlants()
@@ -173,7 +173,7 @@ export default function Dashboard() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {plants.map((p) => (
-            <Link to={`/plants/${p.name}`} key={p.name}>
+            <Link to={`/plants/${p.id}`} key={p.id}>
               <div className="bg-black border border-green-600 p-4 rounded-xl shadow hover:scale-105 hover:shadow-xl transition-transform cursor-pointer">
                 <img
                   src={p.imageUrl || '/images/default.jpg'}
@@ -187,7 +187,7 @@ export default function Dashboard() {
                 <button
                   onClick={(e) => {
                     e.preventDefault()
-                    handleDelete(p.name)
+                    handleDelete(p.id, p.name)
                   }}
                   className="mt-2 text-sm text-red-400 hover:text-red-600 underline"
                 >

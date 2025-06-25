@@ -1,5 +1,6 @@
 package com.example.smart_garden.ontology;
 
+import com.example.smart_garden.entities.SymptomEntity;
 import com.example.smart_garden.models.Plant;
 import com.example.smart_garden.service.NeedRange;
 import com.example.smart_garden.service.ReasoningBlock;
@@ -136,6 +137,28 @@ public class PlantOntology {
                 .sorted()
                 .toList();
     }
+    public List<String> getAllLeafSymptoms() {
+        List<String> leafSymptoms = new ArrayList<>();
+        OWLClass baseSymptomClass = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + "Symptom"));
+
+        // Вземаме всички подкласове на "Symptom", включително вложените
+        Set<OWLClass> allSymptoms = reasoner.getSubClasses(baseSymptomClass, false).getFlattened();
+
+        for (OWLClass symptomClass : allSymptoms) {
+            if (symptomClass.isOWLNothing()) continue;
+
+            // Проверка дали няма подкласове (т.е. leaf)
+            Set<OWLClass> subClasses = reasoner.getSubClasses(symptomClass, true).getFlattened();
+            boolean isLeaf = subClasses.stream().allMatch(OWLClass::isOWLNothing);
+
+            if (isLeaf) {
+                leafSymptoms.add(getClassFriendlyName(symptomClass));
+            }
+        }
+
+        return leafSymptoms.stream().sorted().toList();
+    }
+
 
 
     public Map<String, List<String>> getAllSymptomsGroupedByCategory() {
@@ -356,11 +379,13 @@ public class PlantOntology {
                                 if (propName.toLowerCase().contains("cause")) {
                                     ReasoningBlock block = map.computeIfAbsent(causeName, k -> {
                                         ReasoningBlock b = new ReasoningBlock();
-                                        b.cause = causeName;
+                                        b.setCause(causeName);
                                         return b;
                                     });
 
-                                    block.symptoms.add(symptomName);
+                                    List<String> symptoms = block.getSymptoms();
+                                    symptoms.add(symptomName);
+                                    block.setSymptoms(symptoms);
 
                                     for (OWLSubClassOfAxiom ca : plantOntology.getSubClassAxiomsForSubClass(causeClass)) {
                                         if (ca.getSuperClass() instanceof OWLObjectSomeValuesFrom actionRestriction) {
@@ -371,7 +396,7 @@ public class PlantOntology {
                                                 OWLClass actionClass = actionExpr.asOWLClass();
                                                 String actionClassName = getClassFriendlyName(actionClass);
                                                 boolean found = false;
-
+                                                List<String> actions = block.getActions();
                                                 for (OWLNamedIndividual actionIndiv : plantOntology.getIndividualsInSignature()) {
                                                     Set<OWLClass> types = reasoner.getTypes(actionIndiv, true).getFlattened();
                                                     for (OWLClass t : types) {
@@ -381,15 +406,17 @@ public class PlantOntology {
                                                                     dataFactory.getOWLClass(actionProp.getIRI()));
                                                             if (actionPropName.toLowerCase().contains("care") ||
                                                                     actionPropName.toLowerCase().contains("treat")) {
-                                                                block.actions.add(name);
+                                                                actions.add(name);
                                                                 found = true;
                                                             }
                                                         }
                                                     }
                                                 }
+                                                block.setActions(actions);
 
                                                 if (!found) {
-                                                    block.actions.add(actionClassName);
+                                                    actions.add(actionClassName);
+                                                    block.setActions(actions);
                                                 }
                                             }
                                         }

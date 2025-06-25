@@ -9,6 +9,10 @@ public class PlantFamilyEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     @Column(name = "scientific_name")
     private String scientificName;
 

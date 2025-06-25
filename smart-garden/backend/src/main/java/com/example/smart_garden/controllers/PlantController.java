@@ -7,6 +7,7 @@ import com.example.smart_garden.repositories.UserRepository;
 import com.example.smart_garden.service.NeedRange;
 import com.example.smart_garden.service.PlantService;
 import com.example.smart_garden.service.SensorDataService;
+import lombok.Lombok;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -33,38 +34,30 @@ public class PlantController {
         this.sensorDataService = sensorDataService;
     }
 
-
-
-
-    // ➕ Създава ново растение за логнатия потребител
     @PostMapping
     public PlantEntity createPlant(@AuthenticationPrincipal UserDetails userDetails,
                                    @RequestBody PlantEntity plant) {
         // Извличаме потребителя от базата по username
         UserEntity user = userRepo.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
         return plantService.savePlant(plant, user);
     }
 
 
-    @DeleteMapping("/{plantName}")
+    @DeleteMapping("/{plantId}")
     public ResponseEntity<?> deletePlant(@AuthenticationPrincipal UserDetails userDetails,
-                                         @PathVariable String plantName) {
+                                         @PathVariable Long plantId) {
         UserEntity user = userRepo.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        boolean deleted = plantService.deletePlant(plantName, user);
+        boolean deleted = plantService.deletePlant(plantId, user);
         return deleted
                 ? ResponseEntity.noContent().build()
                 : ResponseEntity.status(403).body("Нямате достъп");
     }
 
-
-
-    // 🔍 Връща нуждите на тип растение (достъпно за всички логнати)
     @GetMapping("/{typeName}/needs")
-    public Map<String, String> getTypeNeeds(@AuthenticationPrincipal UserDetails userDetails,@PathVariable String typeName) {
+    public Map<String, String> getTypeNeeds(@AuthenticationPrincipal UserDetails userDetails, @PathVariable String typeName) {
         return plantService.getNeedsFromPlantType(typeName);
     }
 
@@ -77,15 +70,15 @@ public class PlantController {
         return plantService.getPlantsForUser(user);
     }
 
-    @GetMapping("/{name}")
-    public ResponseEntity<PlantEntity> getPlantByName(
-            @PathVariable String name,
+    @GetMapping("/{plantId}")
+    public ResponseEntity<PlantEntity> getPlantById(
+            @PathVariable Long plantId,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         UserEntity user = userRepo.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return plantService.getPlantByName(name)
+        return plantService.getPlantById(plantId)
                 .filter(p -> p.getUser().getId().equals(user.getId()))
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.status(403).build());
@@ -101,7 +94,6 @@ public class PlantController {
                 .orElse(ResponseEntity.noContent().build());
     }
 
-
     @GetMapping("/types")
     public List<Map<String, String>> getAllPlantTypes(@AuthenticationPrincipal UserDetails userDetails) {
         return plantService.getAllPlantTypes();
@@ -116,15 +108,15 @@ public class PlantController {
         return plantService.getSymptomOptionsGrouped();
     }
 
-
-    @GetMapping("/{plantName}/sensors/history")
-    public Map<String, Object> getSensorHistory(@PathVariable String plantName,@AuthenticationPrincipal UserDetails userDetails) {
+    @GetMapping("/{plantId}/sensors/history")
+    public Map<String, Object> getSensorHistory(@PathVariable Long plantId, @AuthenticationPrincipal UserDetails userDetails) {
         UserEntity user = userRepo.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        PlantEntity plant = plantService.getPlantByName(plantName)
+        PlantEntity plant = plantService.getPlantById(plantId)
                 .filter(p -> p.getUser().getId().equals(user.getId()))
                 .orElseThrow(() -> new RuntimeException("Нямате достъп до това растение"));
+
         sensorDataService.generateRandomReadingsForPlant(plant); // генерира нови
         List<SensorReadingEntity> readings = sensorDataService.getRecentReadingsForPlant(plant);
         List<String> alerts = plantService.evaluatePlantHealth(plant, sensorDataService.extractLastValues(readings));

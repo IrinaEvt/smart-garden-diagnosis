@@ -33,7 +33,9 @@ public class PlantService {
         };
     }
 
-
+    public List<String> getAllLeafSymptoms() {
+        return ontology.getAllLeafSymptoms();
+    }
 
     public PlantEntity savePlant(PlantEntity plant, UserEntity user) {
         ontology.createPlantIndividual(plant.toPlantModel());
@@ -52,9 +54,8 @@ public class PlantService {
         return plantRepo.findByUser(user);
     }
 
-
-    public void addSymptom(String plantName, String symptomName) {
-        Optional<PlantEntity> optional = plantRepo.findById(plantName);
+    public void addSymptom(Long plantId, String symptomName) {
+        Optional<PlantEntity> optional = plantRepo.findById(plantId);
         if (optional.isPresent()) {
             PlantEntity plant = optional.get();
             SymptomEntity symptom = new SymptomEntity();
@@ -62,7 +63,7 @@ public class PlantService {
             symptom.setPlant(plant);
             symptomRepo.save(symptom);
 
-            ontology.createSymptomForPlant(plantName, symptomName);
+            ontology.createSymptomForPlant(plant.getType(), symptomName);
         }
     }
 
@@ -90,13 +91,12 @@ public class PlantService {
         return ontology.getNeedsFromPlantType(typeName);
     }
 
-
     public List<PlantEntity> getAllPlants() {
         return plantRepo.findAll();
     }
 
-    public boolean deletePlant(String plantName, UserEntity user) {
-        Optional<PlantEntity> optional = plantRepo.findById(plantName);
+    public boolean deletePlant(Long plantId, UserEntity user) {
+        Optional<PlantEntity> optional = plantRepo.findById(plantId);
         if (optional.isPresent()) {
             PlantEntity plant = optional.get();
             if (plant.getUser() != null && plant.getUser().getId().equals(user.getId())) {
@@ -106,13 +106,13 @@ public class PlantService {
         }
         return false;
     }
-    public PlantEntity findByIdOrThrow(String name) {
-        return plantRepo.findById(name)
-                .orElseThrow(() -> new RuntimeException("Plant not found: " + name));
+    public PlantEntity findByIdOrThrow(Long id) {
+        return plantRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Plant not found."));
     }
 
-    public Optional<PlantEntity> getPlantByName(String name) {
-        return plantRepo.findById(name);
+    public Optional<PlantEntity> getPlantById(Long id) {
+        return plantRepo.findById(id);
     }
 
     public List<String> evaluatePlantHealth(PlantEntity plant, Map<String, Double> sensorData) {

@@ -5,11 +5,15 @@ import com.example.smart_garden.models.Plant;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 public class PlantEntity {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     private String name;
 
     private String type;
@@ -82,6 +86,14 @@ public class PlantEntity {
         return light;
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     public void setLight(String light) {
         this.light = light;
     }
@@ -108,6 +120,18 @@ public class PlantEntity {
 
     public void setSymptoms(List<SymptomEntity> symptoms) {
         this.symptoms = symptoms;
+    }
+
+    public List<String> getSymptomsStrings() {
+        List<String> symps = new ArrayList<>();
+
+        if (this.symptoms != null) {
+            for (int i = 0; i < this.symptoms.size(); i++) {
+                SymptomEntity symp = this.symptoms.get(i);
+                symps.add(symp.getName());
+            }
+        }
+        return symps;
     }
 
     public UserEntity getUser() {

@@ -35,6 +35,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (path.startsWith("/api/llm")) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {

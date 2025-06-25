@@ -17,6 +17,10 @@ public class SensorReadingEntity {
 
     private LocalDateTime timestamp;
 
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     @ManyToOne
     @JoinColumn(name = "plant_name")
     private PlantEntity plant;
