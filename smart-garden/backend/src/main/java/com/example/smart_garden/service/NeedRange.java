@@ -22,22 +22,22 @@ public class NeedRange {
         switch (parameter) {
             case "temperature":
                 return "high".equalsIgnoreCase(level)
-                        ? new NeedRange(22.0, 28.0)
-                        : new NeedRange(15.0, 21.9);
+                        ? new NeedRange(30.0, 40.0)
+                        : new NeedRange(2.0, 20.0);
             case "light":
                 return "high".equalsIgnoreCase(level)
-                        ? new NeedRange(600, 1000)
-                        : new NeedRange(200, 599);
+                        ? new NeedRange(700, 1000)
+                        : new NeedRange(200, 400);
             case "humidity":
                 return "high".equalsIgnoreCase(level)
                         ? new NeedRange(60, 80)
-                        : new NeedRange(30, 59);
+                        : new NeedRange(20, 30);
             case "soilMoisture":
                 return "high".equalsIgnoreCase(level)
                         ? new NeedRange(70, 100)
                         : new NeedRange(30, 69);
             default:
-                return new NeedRange(0, 0); // fallback
+                return new NeedRange(0, 0);
         }
 
 

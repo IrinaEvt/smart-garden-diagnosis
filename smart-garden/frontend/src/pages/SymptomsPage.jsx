@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import SidebarNavigation from '../components/SidebarNavigation'
 import axios from '../api/axios'
 import { AlertCircle, Leaf, Bug, Droplet, Info } from 'lucide-react'
+import { getReadableSymptomName } from '../utils/symptomNameMap'
 
 export default function SymptomPage() {
   const [symptoms, setSymptoms] = useState([])
@@ -21,10 +22,10 @@ export default function SymptomPage() {
   }
 
   const filterOptions = [
-  { key: 'All', label: '🌍 Всички' },
-  { key: 'Leaf', label: '🌿 Листа' },
-  { key: 'Stem', label: '🧱 Стъбло' },
-  { key: 'Root', label: '🪱 Корени' },
+  { key: 'All', label: ' Всички' },
+  { key: 'Leaf', label: ' Листа' },
+  { key: 'Stem', label: ' Стъбло' },
+  { key: 'Root', label: ' Корени' },
 ]
 
   const getIcon = (part) => {
@@ -35,6 +36,20 @@ export default function SymptomPage() {
       default: return <AlertCircle size={20} />
     }
   }
+
+  const getImageForSymptom = (name) => {
+  const images = {
+    'InterveinalChlorosis': '/images/symptoms/interveinal-chlorosis.png',
+    'BaseRotFromSoil': '/images/symptoms/root-rot.png',
+    'LeafEdgeBurns': '/images/symptoms/tip-burn.png',
+    'StemSofteningAndCollapse': '/images/symptoms/stem-soft.png',
+    'LeafYellowing': '/images/symptoms/yellow-leaves.jpg',
+    'PowderyWhiteSubstanceOnLeaves': '/images/symptoms/powdery.png',
+    'WiltedLeaves': '/images/symptoms/wilted.jpg',
+  }
+
+  return images[name] || '/images/symptoms/default.jpg'
+}
 
   const filteredSymptoms = filter === 'All'
     ? symptoms
@@ -48,7 +63,6 @@ export default function SymptomPage() {
       <main className="flex-1 p-8 space-y-6">
         <h1 className="text-3xl font-bold mb-6">🦠 Симптоми при растенията</h1>
 
-        {/* Филтър по част от растението */}
         <div className="flex gap-4 mb-6">
       {filterOptions.map(({ key, label }) => (
   <button
@@ -71,10 +85,10 @@ export default function SymptomPage() {
             >
               <div className="flex items-center gap-3 mb-2">
                 {getIcon(symptom.partAffected)}
-                <h2 className="text-xl font-semibold">{symptom.symptomName}</h2>
+                <h2 className="text-xl font-semibold">{getReadableSymptomName(symptom.symptomName)}</h2>
               </div>
               <img
-                src={symptom.imageUrl || '/images/symptoms/default.jpg'}
+                src={getImageForSymptom(symptom.symptomName)}
                 alt={symptom.symptomName}
                 className="w-full h-40 object-cover rounded-xl mb-3 border border-green-600"
               />

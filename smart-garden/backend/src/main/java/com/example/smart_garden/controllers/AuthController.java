@@ -27,6 +27,17 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Map<String, String> req) {
+        String username = req.get("username");
+        String password = req.get("password");
+
+        if (username == null || username.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Потребителското име е задължително");
+        }
+
+        if (password == null || password.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Паролата е задължителна");
+        }
+
         if (userRepo.findByUsername(req.get("username")).isPresent()) {
             return ResponseEntity.badRequest().body("Потребителското име е заето");
         }
@@ -42,6 +53,17 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> req) {
+        String username = req.get("username");
+        String password = req.get("password");
+
+        if (username == null || username.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Потребителското име е задължително");
+        }
+
+        if (password == null || password.trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("Паролата е задължителна");
+        }
+
         Optional<UserEntity> userOpt = userRepo.findByUsername(req.get("username"));
         if (userOpt.isEmpty()) return ResponseEntity.status(401).body("Невалидно потребителско име");
 

@@ -5,9 +5,12 @@ import PlantDetails from './pages/PlantDetails'
 import PlantTypesPage from './pages/PlantTypesPage'
 import SymptomsPage from './pages/SymptomsPage'
 import PrivateRoute from './auth/PrivateRoute'
+import { Toaster } from 'react-hot-toast'
 
 function App() {
   return (
+    <>
+    <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
     <Routes>
       {/* Публична страница (login/register) */}
       <Route path="/" element={<LoginRegister />} />
@@ -40,6 +43,7 @@ function App() {
       {/* Пренасочване при невалиден път */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
+    </>
   )
 }
 

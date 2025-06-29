@@ -6,7 +6,6 @@ import SidebarNavigation from '../components/SidebarNavigation'
 
 export default function Dashboard() {
   const { token } = useAuth()
-  console.log("Токен:", token)
   const [plants, setPlants] = useState([])
   const [plantTypes, setPlantTypes] = useState([]) 
   const [showTypeSelector, setShowTypeSelector] = useState(false)
@@ -19,11 +18,15 @@ export default function Dashboard() {
   })
 
   const imageMap = {
-    "Cactus": "/images/cactus.png",
-    "Calathea": "/images/flower.jpg",
-    "Cyclamen": "/images/tree.jpg",
-    "Orchid": "/images/cactus.jpg",
-    "SnakePlant": "/images/fern.jpg"
+    "Ctenanthe":"/images/ctenanthe.png",
+    "Calathea": "/images/calathea.png",
+    "Cyclamen": "/images/cyclamen.jpg",
+    "Primula": "/images/primula.jpg",
+    "Orchid": "/images/orchid.jpg",
+    "SnakePlant": "/images/snakeplant.jpg",
+    "Dracaena": "/images/dracaena.jpg",
+    "Opuntia": "/images/opuntia.jpg",
+    "EchinocactusGrusonii": "/images/echinocactus-grusonii.jpg"
   }
 
   useEffect(() => {
@@ -47,8 +50,7 @@ export default function Dashboard() {
       const res = await axios.get('/plants/types', {
         headers: { Authorization: `Bearer ${token}` }
       })
-      console.log('Типове от сървъра:', res.data)
-      setPlantTypes(res.data) // [{ type: "", family: "" }]
+      setPlantTypes(res.data)
     } catch (err) {
       console.error('Грешка при зареждане на типовете растения:', err)
     }
@@ -83,7 +85,6 @@ export default function Dashboard() {
     }
   }
 
-  // Групиране по семейство
   const groupedByFamily = plantTypes.reduce((acc, { type, family }) => {
     if (!acc[family]) acc[family] = []
     acc[family].push(type)
@@ -168,35 +169,41 @@ export default function Dashboard() {
           </div>
         </form>
 
-        {/* Заглавие и списък */}
         <h1 className="text-3xl font-bold">Твоите растения</h1>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {plants.map((p) => (
-            <Link to={`/plants/${p.id}`} key={p.id}>
-              <div className="bg-black border border-green-600 p-4 rounded-xl shadow hover:scale-105 hover:shadow-xl transition-transform cursor-pointer">
-                <img
-                  src={p.imageUrl || '/images/default.jpg'}
-                  alt={p.name}
-                  className="h-40 w-full object-cover rounded mb-4"
-                />
-                <h2 className="text-xl font-bold">{p.name}</h2>
-                <p className="text-sm text-green-300">{p.type}</p>
-                <p className="text-xs text-green-500 italic">{p.family}</p>
+        {/* 🔽 Тук идва условното показване */}
+        {plants.length === 0 ? (
+          <p className="text-gray-400 text-lg italic">
+            Все още нямате добавени растения.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {plants.map((p) => (
+              <Link to={`/plants/${p.id}`} key={p.id}>
+                <div className="bg-black border border-green-600 p-4 rounded-xl shadow hover:scale-105 hover:shadow-xl transition-transform cursor-pointer">
+                  <img
+                    src={p.imageUrl || '/images/default.jpg'}
+                    alt={p.name}
+                    className="h-40 w-full object-cover rounded mb-4"
+                  />
+                  <h2 className="text-xl font-bold">{p.name}</h2>
+                  <p className="text-sm text-green-300">{p.type}</p>
+                  <p className="text-xs text-green-500 italic">{p.family}</p>
 
-                <button
-                  onClick={(e) => {
-                    e.preventDefault()
-                    handleDelete(p.id, p.name)
-                  }}
-                  className="mt-2 text-sm text-red-400 hover:text-red-600 underline"
-                >
-                  Изтрий
-                </button>
-              </div>
-            </Link>
-          ))}
-        </div>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      handleDelete(p.id, p.name)
+                    }}
+                    className="mt-2 text-sm text-red-400 hover:text-red-600 underline"
+                  >
+                    Изтрий
+                  </button>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   )

@@ -13,10 +13,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 
 @RestController
@@ -109,7 +106,10 @@ public class PlantController {
     }
 
     @GetMapping("/{plantId}/sensors/history")
-    public Map<String, Object> getSensorHistory(@PathVariable Long plantId, @AuthenticationPrincipal UserDetails userDetails) {
+    public Map<String, Object> getSensorHistory(
+            @PathVariable Long plantId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
         UserEntity user = userRepo.findByUsername(userDetails.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -117,15 +117,23 @@ public class PlantController {
                 .filter(p -> p.getUser().getId().equals(user.getId()))
                 .orElseThrow(() -> new RuntimeException("Нямате достъп до това растение"));
 
-        sensorDataService.generateRandomReadingsForPlant(plant); // генерира нови
         List<SensorReadingEntity> readings = sensorDataService.getRecentReadingsForPlant(plant);
-        List<String> alerts = plantService.evaluatePlantHealth(plant, sensorDataService.extractLastValues(readings));
 
         Map<String, Object> response = new LinkedHashMap<>();
-        response.put("readings", readings);
+        response.put("readings", readings); // 🔹 за графики (10)
+
+        // 🔹 извличане на последните стойности по параметър:
+        Map<String, Double> latestValues = sensorDataService.extractLastValues(readings);
+
+        // 🔹 аларми само от тях:
+        List<String> alerts = sensorDataService.evaluateAlertsFromMap(latestValues);  // ще направим тази функция ↓
+
         response.put("alerts", alerts);
         return response;
     }
+
+
+
 
 
 

@@ -6,5 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface SensorReadingRepository extends JpaRepository<SensorReadingEntity, Long> {
-    List<SensorReadingEntity> findTop10ByPlantOrderByTimestampDesc(PlantEntity plant);
+    List<SensorReadingEntity> findTop10ByPlantAndParameterOrderByTimestampDesc(PlantEntity plant, String parameter);
+
 }

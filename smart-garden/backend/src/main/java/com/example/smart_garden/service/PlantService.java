@@ -16,19 +16,21 @@ public class PlantService {
     private final PlantRepository plantRepo;
     private final SymptomRepository symptomRepo;
     private final PlantOntology ontology;
+    private final AgentManagerService agentManager;
 
-    public PlantService(PlantRepository plantRepo, SymptomRepository symptomRepo) {
+    public PlantService(PlantRepository plantRepo, SymptomRepository symptomRepo,AgentManagerService agentManager,PlantOntology ontology) {
         this.plantRepo = plantRepo;
         this.symptomRepo = symptomRepo;
-        this.ontology = new PlantOntology();
+        this.ontology = ontology;
+        this.agentManager = agentManager;
     }
 
     private NeedRange interpretRange(String level, String parameter) {
         return switch (parameter) {
-            case "temperature" -> "high".equalsIgnoreCase(level) ? new NeedRange(22, 28) : new NeedRange(16, 22);
-            case "light"       -> "high".equalsIgnoreCase(level) ? new NeedRange(600, 1000) : new NeedRange(200, 600);
-            case "humidity"    -> "high".equalsIgnoreCase(level) ? new NeedRange(60, 80) : new NeedRange(30, 60);
-            case "soilMoisture"-> "high".equalsIgnoreCase(level) ? new NeedRange(50, 80) : new NeedRange(20, 50);
+            case "temperature" -> "high".equalsIgnoreCase(level) ? new NeedRange(30, 40) : new NeedRange(2, 20);
+            case "light"       -> "high".equalsIgnoreCase(level) ? new NeedRange(700, 1000) : new NeedRange(200, 400);
+            case "humidity"    -> "high".equalsIgnoreCase(level) ? new NeedRange(60, 80) : new NeedRange(20, 30);
+            case "soilMoisture"-> "high".equalsIgnoreCase(level) ? new NeedRange(70, 100) : new NeedRange(30, 69);
             default -> new NeedRange(0, 0); // fallback
         };
     }
@@ -39,6 +41,7 @@ public class PlantService {
 
     public PlantEntity savePlant(PlantEntity plant, UserEntity user) {
         ontology.createPlantIndividual(plant.toPlantModel());
+        ontology.reloadReasoner();
 
         Map<String, String> needs = getNeedsFromPlantType(plant.getType());
         plant.setTemperature(needs.get("temperature"));
@@ -47,7 +50,12 @@ public class PlantService {
         plant.setSoilMoisture(needs.get("soilMoisture"));
 
         plant.setUser(user);
-        return plantRepo.save(plant);
+        PlantEntity saved = plantRepo.save(plant);
+        agentManager.startSensorAgent(saved.getId());
+        agentManager.startPlantAgent(saved.getId(),saved.getName());
+        System.out.println("📦 Създавам индивид " + plant.getName() + " от тип " + plant.getType());
+
+        return saved;
     }
 
     public List<PlantEntity> getPlantsForUser(UserEntity user) {
@@ -101,6 +109,7 @@ public class PlantService {
             PlantEntity plant = optional.get();
             if (plant.getUser() != null && plant.getUser().getId().equals(user.getId())) {
                 plantRepo.delete(plant);
+                agentManager.stopAgentsForPlant(plantId, plant.getName());
                 return true;
             }
         }
@@ -123,6 +132,8 @@ public class PlantService {
             return alerts;
         }
 
+
+
         checkParameter(alerts, "temperature", plant.getTemperature(), sensorData.get("temperature"));
         checkParameter(alerts, "light", plant.getLight(), sensorData.get("light"));
         checkParameter(alerts, "humidity", plant.getHumidity(), sensorData.get("humidity"));
@@ -130,6 +141,8 @@ public class PlantService {
 
         return alerts;
     }
+
+
 
     private void checkParameter(List<String> alerts, String paramName, String expectedLevel, Double actualValue) {
         NeedRange range = interpretRange(expectedLevel, paramName);

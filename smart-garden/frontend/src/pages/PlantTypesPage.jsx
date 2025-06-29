@@ -21,11 +21,11 @@ export default function PlantTypesPage() {
 
   const getImageForFamily = (name) => {
     const images = {
-      'Primulaceae': '/images/primulaceae.png',
-      'Cactaceae': '/images/cactaceae.jpg',
-      'Marantaceae': '/images/marantaceae.jpg',
-      'Orchidaceae': '/images/orchidaceae.jpg',
-      'Asparagaceae': '/images/asparagaceae.jpg',
+      'Primulaceae': '/images/families/primulaceae.png',
+      'Cactaceae': '/images/opuntia.jpg',
+      'Marantaceae': '/images/ctenanthe.png',
+      'Orchidaceae': '/images/orchid.jpg',
+      'Asparagaceae': '/images/snakeplant.jpg',
     }
     return images[name] || '/images/default.jpg'
   }

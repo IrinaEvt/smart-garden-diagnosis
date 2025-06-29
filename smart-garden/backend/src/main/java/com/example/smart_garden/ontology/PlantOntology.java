@@ -13,11 +13,14 @@ import org.semanticweb.owlapi.reasoner.OWLReasoner;
 import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
 import org.semanticweb.owlapi.search.EntitySearcher;
 import org.semanticweb.owlapi.util.OWLEntityRemover;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
+@Component
 public class PlantOntology {
 
     private OWLOntologyManager ontoManager;
@@ -64,7 +67,7 @@ public class PlantOntology {
         OWLClass plantType = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + plant.getType()));
         OWLClass familyClass = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + familyName));
 
-        // Добавяне на класове, ако не съществуват
+
         if (!plantOntology.containsClassInSignature(plantType.getIRI())) {
             OWLDeclarationAxiom declareClass = dataFactory.getOWLDeclarationAxiom(plantType);
             ontoManager.applyChange(new AddAxiom(plantOntology, declareClass));
@@ -75,13 +78,13 @@ public class PlantOntology {
             ontoManager.applyChange(new AddAxiom(plantOntology, declareFamilyClass));
         }
 
-        // Установяване на йерархията: plantType SubClassOf familyClass
+
         OWLSubClassOfAxiom hierarchyAxiom = dataFactory.getOWLSubClassOfAxiom(plantType, familyClass);
         if (!plantOntology.containsAxiom(hierarchyAxiom)) {
             ontoManager.applyChange(new AddAxiom(plantOntology, hierarchyAxiom));
         }
 
-        // Индивид от тип растение
+
         OWLClassAssertionAxiom axPlant = dataFactory.getOWLClassAssertionAxiom(plantType, plantIndiv);
         ontoManager.applyChange(new AddAxiom(plantOntology, axPlant));
     }
@@ -96,22 +99,22 @@ public class PlantOntology {
         OWLNamedIndividual symptomIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + symptomIndivName));
         OWLClass symptomClass = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + symptomName));
 
-        // Ако класът на симптома не съществува, го добавяме
+
         if (!plantOntology.containsClassInSignature(symptomClass.getIRI())) {
             OWLDeclarationAxiom declareSymptomClass = dataFactory.getOWLDeclarationAxiom(symptomClass);
             ontoManager.applyChange(new AddAxiom(plantOntology, declareSymptomClass));
         }
 
-        // Декларираме, че симптомът е от определен клас
+
         OWLClassAssertionAxiom classAssertion = dataFactory.getOWLClassAssertionAxiom(symptomClass, symptomIndiv);
         ontoManager.applyChange(new AddAxiom(plantOntology, classAssertion));
 
-        // Свързваме растението със симптома чрез hasSymptom
+
         OWLObjectProperty hasSymptom = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasSymptom"));
         OWLObjectPropertyAssertionAxiom link = dataFactory.getOWLObjectPropertyAssertionAxiom(hasSymptom, plantIndiv, symptomIndiv);
         ontoManager.applyChange(new AddAxiom(plantOntology, link));
 
-        // Презареждаме reasoner-а, за да вземе предвид новите факти
+
         reloadReasoner();
     }
 
@@ -141,13 +144,13 @@ public class PlantOntology {
         List<String> leafSymptoms = new ArrayList<>();
         OWLClass baseSymptomClass = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + "Symptom"));
 
-        // Вземаме всички подкласове на "Symptom", включително вложените
+
         Set<OWLClass> allSymptoms = reasoner.getSubClasses(baseSymptomClass, false).getFlattened();
 
         for (OWLClass symptomClass : allSymptoms) {
             if (symptomClass.isOWLNothing()) continue;
 
-            // Проверка дали няма подкласове (т.е. leaf)
+
             Set<OWLClass> subClasses = reasoner.getSubClasses(symptomClass, true).getFlattened();
             boolean isLeaf = subClasses.stream().allMatch(OWLClass::isOWLNothing);
 
@@ -190,7 +193,7 @@ public class PlantOntology {
                 }
             }
 
-            // Ако няма подкатегории, взимаме директно "крайните"
+
             Set<OWLClass> directLeafs = reasoner.getSubClasses(parentCategory, true).getFlattened();
             List<String> directNames = new ArrayList<>();
 
@@ -266,89 +269,6 @@ public class PlantOntology {
     }
 
 
-
-
-
-  /*  public List<String> getAdviceForPlantIndividual(String plantIndivName) {
-        List<String> result = new ArrayList<>();
-        OWLNamedIndividual plantIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + plantIndivName));
-        OWLObjectProperty hasSymptom = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasSymptom"));
-
-        for (OWLObjectPropertyAssertionAxiom ax : plantOntology.getObjectPropertyAssertionAxioms(plantIndiv)) {
-            if (ax.getProperty().equals(hasSymptom)) {
-                OWLNamedIndividual symptomIndiv = ax.getObject().asOWLNamedIndividual();
-                String symptomName = getIndividualFriendlyName(symptomIndiv.getIRI());
-                System.out.println("SSSSSSSSSSSSSSSSS" + symptomName);
-                result.add("Симптом: " + symptomName);
-
-                // Reason за типа на симптома
-                Set<OWLClass> symptomTypes = reasoner.getTypes(symptomIndiv, true).getFlattened();
-                System.out.println("Типове: " + symptomTypes);
-                for (OWLClass symptomClass : symptomTypes) {
-                    for (OWLSubClassOfAxiom sa : plantOntology.getSubClassAxiomsForSubClass(symptomClass)) {
-                        if (sa.getSuperClass() instanceof OWLObjectSomeValuesFrom) {
-                            OWLObjectSomeValuesFrom restriction = (OWLObjectSomeValuesFrom) sa.getSuperClass();
-                            OWLObjectPropertyExpression prop = restriction.getProperty();
-                            OWLClassExpression filler = restriction.getFiller();
-
-                            if (!filler.isAnonymous()) {
-                                OWLClass causeClass = filler.asOWLClass();
-                                String causeName = getClassFriendlyName(causeClass);
-
-                                String propName = getClassFriendlyName(
-                                        dataFactory.getOWLClass(prop.asOWLObjectProperty().getIRI())
-                                );
-
-                                if (propName.toLowerCase().contains("cause")) {
-                                    result.add("Възможна причина: " + causeName);
-
-                                    // Потърси care action за причината
-                                    for (OWLSubClassOfAxiom ca : plantOntology.getSubClassAxiomsForSubClass(causeClass)) {
-                                        if (ca.getSuperClass() instanceof OWLObjectSomeValuesFrom) {
-                                            OWLObjectSomeValuesFrom actionRestriction = (OWLObjectSomeValuesFrom) ca.getSuperClass();
-                                            OWLObjectProperty actionProp = actionRestriction.getProperty().asOWLObjectProperty();
-                                            OWLClassExpression actionExpr = actionRestriction.getFiller();
-
-                                            if (!actionExpr.isAnonymous()) {
-                                                OWLClass actionClass = actionExpr.asOWLClass();
-                                                String actionClassName = getClassFriendlyName(actionClass);
-
-                                                boolean foundActionIndividual = false;
-
-                                                for (OWLNamedIndividual actionIndiv : plantOntology.getIndividualsInSignature()) {
-                                                    Set<OWLClass> actionTypes = reasoner.getTypes(actionIndiv, true).getFlattened();
-                                                    for (OWLClass type : actionTypes) {
-                                                        if (type.equals(actionClass)) {
-                                                            String actionName = getIndividualFriendlyName(actionIndiv.getIRI());
-                                                            String actionPropName = getClassFriendlyName(
-                                                                    dataFactory.getOWLClass(actionProp.getIRI())
-                                                            );
-
-                                                            if (actionPropName.toLowerCase().contains("care")
-                                                                    || actionPropName.toLowerCase().contains("treat")) {
-                                                                result.add("Препоръчано действие: " + actionName);
-                                                                foundActionIndividual = true;
-                                                            }
-                                                        }
-                                                    }
-                                                }
-
-                                                if (!foundActionIndividual) {
-                                                    result.add("Препоръчано действие (клас): " + actionClassName);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        return result;
-    }*/
 
     public List<ReasoningBlock> getAdviceForPlantIndividual(String plantIndivName) {
         List<ReasoningBlock> grouped = new ArrayList<>();
@@ -564,7 +484,295 @@ public class PlantOntology {
         } catch (OWLOntologyStorageException e) {
             System.out.println("Error saving ontology: " + e.getMessage());
         }
-
-
     }
+
+    public void addEnvironmentalCondition(String plantName, String conditionName) {
+        OWLNamedIndividual plantIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + plantName));
+        String conditionIndivName = plantName + "_" + conditionName;
+        OWLNamedIndividual conditionIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + conditionIndivName));
+
+        if (plantOntology.containsIndividualInSignature(conditionIndiv.getIRI())) {
+            System.out.println("⚠️ Условие вече съществува и ще бъде пропуснато: " + conditionIndivName);
+            return;
+        }
+
+        OWLClass conditionClass = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + conditionName));
+        OWLClassAssertionAxiom typeAxiom = dataFactory.getOWLClassAssertionAxiom(conditionClass, conditionIndiv);
+        ontoManager.applyChange(new AddAxiom(plantOntology, typeAxiom));
+
+        OWLObjectProperty hasCondition = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasCondition"));
+        OWLObjectPropertyAssertionAxiom link = dataFactory.getOWLObjectPropertyAssertionAxiom(hasCondition, plantIndiv, conditionIndiv);
+        ontoManager.applyChange(new AddAxiom(plantOntology, link));
+
+        System.out.println("➕ Добавено състояние: " + conditionName);
+    }
+
+
+
+
+   /* public void debugPlantConditionsAndTypes(String plantName) {
+        System.out.println("🔍 DEBUG за условията на растението: " + plantName);
+
+        OWLNamedIndividual plantIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + plantName));
+        OWLObjectProperty hasCondition = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasCondition"));
+
+        for (OWLObjectPropertyAssertionAxiom ax : plantOntology.getObjectPropertyAssertionAxioms(plantIndiv)) {
+            if (ax.getProperty().equals(hasCondition)) {
+                OWLNamedIndividual conditionIndiv = ax.getObject().asOWLNamedIndividual();
+                String conditionIndivName = conditionIndiv.getIRI().getShortForm();
+                System.out.println("  🧩 Условие: " + conditionIndivName);
+
+                Set<OWLClass> inferredTypes = reasoner.getTypes(conditionIndiv, true).getFlattened();
+
+                for (OWLClass type : inferredTypes) {
+                    if (!type.isOWLNothing()) {
+                        System.out.println("     🔎 Инфериран тип: " + getClassFriendlyName(type));
+                    }
+                }
+            }
+        }
+    }
+ */
+
+    public void evaluateAndAddRisks(String plantName) {
+        reloadReasoner();
+        OWLNamedIndividual plantIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + plantName));
+        OWLObjectProperty hasCondition = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasCondition"));
+        OWLObjectProperty hasRisk = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasRisk"));
+
+        System.out.println("🔍 Индивиди със състояния:");
+        for (OWLObjectPropertyAssertionAxiom ax : plantOntology.getObjectPropertyAssertionAxioms(plantIndiv)) {
+            if (ax.getProperty().equals(hasCondition)) {
+                OWLNamedIndividual conditionIndiv = ax.getObject().asOWLNamedIndividual();
+                Set<OWLClass> conditionTypes = reasoner.getTypes(conditionIndiv, true).getFlattened();
+
+                for (OWLClass conditionClass : conditionTypes) {
+                    Set<OWLClassExpression> allSupers = new HashSet<>();
+                    allSupers.addAll(EntitySearcher.getSuperClasses(conditionClass, plantOntology));
+                    allSupers.addAll(EntitySearcher.getEquivalentClasses(conditionClass, plantOntology));
+
+                    for (OWLClassExpression sup : allSupers) {
+                        if (sup instanceof OWLObjectSomeValuesFrom some && some.getProperty().equals(hasRisk)) {
+                            OWLClass riskClass = some.getFiller().asOWLClass();
+
+                            String riskIndivName = plantName + "_" + riskClass.getIRI().getShortForm();
+                            OWLNamedIndividual riskIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + riskIndivName));
+
+                            if (plantOntology.containsIndividualInSignature(riskIndiv.getIRI())) {
+                                System.out.println("⚠️ Риск вече съществува и ще бъде пропуснат: " + riskIndivName);
+                                continue;
+                            }
+
+                            OWLClassAssertionAxiom riskTypeAx = dataFactory.getOWLClassAssertionAxiom(riskClass, riskIndiv);
+                            ontoManager.applyChange(new AddAxiom(plantOntology, riskTypeAx));
+
+                            OWLObjectPropertyAssertionAxiom link = dataFactory.getOWLObjectPropertyAssertionAxiom(hasRisk, plantIndiv, riskIndiv);
+                            ontoManager.applyChange(new AddAxiom(plantOntology, link));
+
+                            System.out.println("⚠️ Добавен риск: " + riskClass.getIRI().getShortForm());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+
+
+    public void evaluateAndAddComplexCondition(String plantName) {
+        OWLNamedIndividual plantIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + plantName));
+        OWLObjectProperty hasCondition = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasCondition"));
+
+        Set<OWLNamedIndividual> conditions = new HashSet<>();
+        for (OWLObjectPropertyAssertionAxiom ax : plantOntology.getObjectPropertyAssertionAxioms(plantIndiv)) {
+            if (ax.getProperty().equals(hasCondition)) {
+                conditions.add(ax.getObject().asOWLNamedIndividual());
+            }
+        }
+
+        String ghostName = plantName + "_GhostCondition";
+        OWLNamedIndividual ghostIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + ghostName));
+
+        // Изтрий предишен ghost (ако има)
+        if (plantOntology.containsIndividualInSignature(ghostIndiv.getIRI())) {
+            OWLEntityRemover remover = new OWLEntityRemover(plantOntology.getImportsClosure());
+            ghostIndiv.accept(remover);
+            ontoManager.applyChanges(remover.getChanges());
+        }
+
+        // Добави нов ghostIndiv с връзки
+        for (OWLNamedIndividual cond : conditions) {
+            OWLObjectPropertyAssertionAxiom link = dataFactory.getOWLObjectPropertyAssertionAxiom(hasCondition, ghostIndiv, cond);
+            ontoManager.applyChange(new AddAxiom(plantOntology, link));
+        }
+
+        // ✅ reload след добавянето
+        reloadReasoner();
+
+        // Печат на връзки
+        System.out.println("📋 Ghost индивид: " + ghostIndiv.getIRI().getShortForm());
+        for (OWLObjectPropertyAssertionAxiom ax : plantOntology.getObjectPropertyAssertionAxioms(ghostIndiv)) {
+            if (ax.getProperty().equals(hasCondition)) {
+                System.out.println("🔗 Ghost има hasCondition към: " + ax.getObject().asOWLNamedIndividual().getIRI().getShortForm());
+            }
+        }
+
+        // Инференция
+        OWLClass complexSuper = dataFactory.getOWLClass(IRI.create(ontologyIRIStr + "ComplexCondition"));
+        Set<OWLClass> inferred = reasoner.getTypes(ghostIndiv, true).getFlattened();
+
+        for (OWLClass cls : inferred) {
+            if (!cls.isOWLNothing() && reasoner.getSuperClasses(cls, false).containsEntity(complexSuper)) {
+                String inferredName = getClassFriendlyName(cls);
+                String finalIndivName = plantName + "_" + inferredName;
+
+                OWLNamedIndividual newIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + finalIndivName));
+                if (plantOntology.containsIndividualInSignature(newIndiv.getIRI())) {
+                    System.out.println("⚠️ ComplexCondition вече съществува: " + finalIndivName);
+                    continue;
+                }
+
+                OWLClassAssertionAxiom ax = dataFactory.getOWLClassAssertionAxiom(cls, newIndiv);
+                OWLObjectPropertyAssertionAxiom link = dataFactory.getOWLObjectPropertyAssertionAxiom(hasCondition, plantIndiv, newIndiv);
+
+                ontoManager.applyChange(new AddAxiom(plantOntology, ax));
+                ontoManager.applyChange(new AddAxiom(plantOntology, link));
+
+                System.out.println("✅ Инфериран ComplexCondition: " + inferredName);
+            }
+        }
+
+        // Изтрий ghost
+        OWLEntityRemover remover = new OWLEntityRemover(plantOntology.getImportsClosure());
+        ghostIndiv.accept(remover);
+        ontoManager.applyChanges(remover.getChanges());
+        System.out.println("🧽 Изтрит временен ghost индивид: " + ghostName);
+    }
+
+
+
+
+
+
+    public void evaluateAndAddCondition(String plantName, String param, double value) {
+        String type = getPlantByIndividualName(plantName).getType();
+        Map<String, String> needs = getNeedsFromPlantType(type);
+
+
+        System.out.println("🌿 evaluateAndAddCondition: " + plantName + " | " + param + "=" + value);
+        System.out.println("   ➤ Тип: " + type + " | Нужда: " + needs.get(param));
+
+
+        if (!needs.containsKey(param)) return;
+
+        String needLevel = needs.get(param);
+        String condition = null;
+
+        switch (param) {
+            case "temperature":
+                if (needLevel.equals("low") && value > 35) condition = "HighTemperatureCondition";
+                if (needLevel.equals("high") && value < 20) condition = "LowTemperatureCondition";
+                break;
+            case "humidity":
+                if (needLevel.equals("low") && value > 60) condition = "HighHumidityCondition";
+                if (needLevel.equals("high") && value < 60) condition = "LowHumidityCondition";
+                break;
+            case "light":
+                if (needLevel.equals("low") && value > 500) condition = "HighLightCondition";
+                if (needLevel.equals("high") && value < 500) condition = "LowLightCondition";
+                break;
+            case "soilMoisture":
+                if (needLevel.equals("low") && value > 60) condition = "HighSoilMoistureCondition";
+                if (needLevel.equals("high") && value < 40) condition = "LowSoilMoistureCondition";
+                break;
+        }
+
+        if (condition != null) {
+            addEnvironmentalCondition(plantName, condition);
+
+        }
+    }
+
+
+    public List<String> getRisksForPlant(String plantName) {
+        List<String> risks = new ArrayList<>();
+
+        OWLNamedIndividual plantIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + plantName));
+        OWLObjectProperty hasRisk = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasRisk"));
+
+
+        Set<OWLNamedIndividual> riskIndivs = new HashSet<>();
+
+    /*    // 1. Експлицитни
+        for (OWLObjectPropertyAssertionAxiom ax : plantOntology.getObjectPropertyAssertionAxioms(plantIndiv)) {
+            if (ax.getProperty().equals(hasRisk)) {
+                riskIndivs.add(ax.getObject().asOWLNamedIndividual());
+            }
+        }
+*/
+        // 2. Инферирани
+        NodeSet<OWLNamedIndividual> inferred = reasoner.getObjectPropertyValues(plantIndiv, hasRisk);
+        riskIndivs.addAll(inferred.getFlattened());
+
+        for (OWLNamedIndividual riskIndiv : riskIndivs) {
+            Set<OWLClass> types = reasoner.getTypes(riskIndiv, true).getFlattened();
+            for (OWLClass cls : types) {
+                if (!cls.isOWLNothing()) {
+                    risks.add(getClassFriendlyName(cls));
+                }
+            }
+        }
+
+      //  return risks.stream().distinct().toList();
+        return risks;
+    }
+
+
+    public void clearAllConditionsAndRisks(String plantName) {
+        OWLNamedIndividual plantIndiv = dataFactory.getOWLNamedIndividual(IRI.create(ontologyIRIStr + plantName));
+        OWLObjectProperty hasCondition = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasCondition"));
+        OWLObjectProperty hasRisk = dataFactory.getOWLObjectProperty(IRI.create(ontologyIRIStr + "hasRisk"));
+
+        List<OWLObjectPropertyAssertionAxiom> toRemove = new ArrayList<>();
+        Set<OWLAxiom> additionalRemovals = new HashSet<>();
+
+        // Събира всички hasCondition и hasRisk връзки
+        for (OWLObjectPropertyAssertionAxiom ax : plantOntology.getObjectPropertyAssertionAxioms(plantIndiv)) {
+            if (ax.getProperty().equals(hasCondition) || ax.getProperty().equals(hasRisk)) {
+                toRemove.add(ax);
+
+                // Ако сме добавяли и тип за риска (например: riskIndiv rdf:type RiskClass), махаме и него
+                OWLNamedIndividual target = ax.getObject().asOWLNamedIndividual();
+                for (OWLClassAssertionAxiom ca : plantOntology.getClassAssertionAxioms(target)) {
+                    additionalRemovals.add(ca);
+                }
+            }
+        }
+
+        // Премахване
+        for (OWLAxiom ax : toRemove) {
+            ontoManager.applyChange(new RemoveAxiom(plantOntology, ax));
+        }
+        for (OWLAxiom ax : additionalRemovals) {
+            ontoManager.applyChange(new RemoveAxiom(plantOntology, ax));
+        }
+
+
+        System.out.println("🧹 Изчистени условия и рискове за " + plantName);
+    }
+
+    public void evaluatePlantState(String plantName, Map<String, Double> values) {
+        clearAllConditionsAndRisks(plantName);
+
+        for (Map.Entry<String, Double> entry : values.entrySet()) {
+            evaluateAndAddCondition(plantName, entry.getKey(), entry.getValue());
+        }
+
+        evaluateAndAddComplexCondition(plantName);
+        evaluateAndAddRisks(plantName);
+        reloadReasoner();
+    }
+
+
 }

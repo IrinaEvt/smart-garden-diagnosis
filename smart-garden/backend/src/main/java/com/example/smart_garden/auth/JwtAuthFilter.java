@@ -29,7 +29,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // ❗️Позволяваме само на /api/auth/** да мине без JWT проверка
+
         if (path.startsWith("/api/auth")) {
             chain.doFilter(request, response);
             return;
@@ -40,10 +40,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
+        if (path.startsWith("/api/alerts")) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            // ❌ Ако няма токен – отказ
+
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
@@ -65,7 +70,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            // Например: потребител не съществува, токен е зле подписан и т.н.
+
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return;
         }

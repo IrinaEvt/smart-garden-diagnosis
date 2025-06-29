@@ -1,19 +1,17 @@
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
-export default function SensorChart({ parameter, data }) {
-  // 🔍 Филтрираме само стойностите за текущия параметър (temperature, humidity и т.н.)
+export default function SensorChart({ parameter, title, data }) {
   const filtered = data
     .filter(d => d.parameter === parameter)
     .map(d => ({
       ...d,
-      readingValue: parseFloat(d.readingValue), // гарантираме числово
-      timestamp: new Date(d.timestamp).toLocaleTimeString() // по-кратко време
-    }))
+      readingValue: parseFloat(d.readingValue),
+      timestamp: new Date(d.timestamp).toLocaleTimeString()
+    }));
 
-    console.log("filtered data", filtered) 
   return (
     <div>
-      <h4 className="font-semibold">{parameter}</h4>
+      <h4 className="font-semibold">{title}</h4>
       <ResponsiveContainer width="100%" height={200}>
         <LineChart data={filtered}>
           <XAxis dataKey="timestamp" />
