@@ -126,7 +126,7 @@ public class PlantController {
         Map<String, Double> latestValues = sensorDataService.extractLastValues(readings);
 
         // 🔹 аларми само от тях:
-        List<String> alerts = sensorDataService.evaluateAlertsFromMap(latestValues);  // ще направим тази функция ↓
+        List<String> alerts = sensorDataService.evaluateAlertsFromMap(latestValues,plant.getType());  // ще направим тази функция ↓
 
         response.put("alerts", alerts);
         return response;

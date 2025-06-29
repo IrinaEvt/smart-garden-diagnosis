@@ -126,7 +126,7 @@ const fetchRiskAssessment = async () => {
     setSensorAlerts(res.data.alerts)
      setShowRiskButton(true) 
 
-    if (res.data.alerts.length > 2) {
+    if (res.data.alerts.length >= 2) {
       fetchEasyCareSuggestion(res.data.alerts.length)
     } else {
       setEasySuggestion(null)
@@ -575,9 +575,9 @@ const analyzeImage = async () => {
             </ul>
           </div>
 
-          {/* Вдясно: рискове и бутон за оценка */}
+        
           <div className="flex flex-col gap-4 flex-1 text-orange-400">
-            {sensorAlerts.length > 2 && (
+            {sensorAlerts.length >= 2 && (
               <button
                 onClick={fetchRiskAssessment}
                 className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-full text-sm self-start"
@@ -600,12 +600,12 @@ const analyzeImage = async () => {
         </div>
       )}
 
-      {/* Няма проблеми */}
+
       {sensorAlerts.length === 0 && (
         <p className="text-green-400 mt-4">✅ Всичко е в норма!</p>
       )}
 
-      {/* Лесна препоръка */}
+
       {easySuggestion && (
         <div className="mt-6 border-t border-green-800 pt-4">
           <h3 className="text-lg font-semibold text-green-300">🌿 Препоръка</h3>
@@ -617,7 +617,7 @@ const analyzeImage = async () => {
       )}
     </div>
 
-    {/* Графики */}
+
     {["temperature", "light", "humidity", "soilMoisture"].map(param => (
       <SensorChart
         key={param}

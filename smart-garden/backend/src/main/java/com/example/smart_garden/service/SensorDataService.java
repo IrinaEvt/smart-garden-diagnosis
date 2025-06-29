@@ -2,6 +2,7 @@ package com.example.smart_garden.service;
 
 import com.example.smart_garden.entities.PlantEntity;
 import com.example.smart_garden.entities.SensorReadingEntity;
+import com.example.smart_garden.ontology.PlantOntology;
 import com.example.smart_garden.repositories.SensorReadingRepository;
 import org.springframework.stereotype.Service;
 
@@ -12,13 +13,18 @@ public class SensorDataService {
 
     private final SensorReadingRepository sensorRepo;
 
+    private final PlantOntology plantOntology;
+
+    public SensorDataService(SensorReadingRepository sensorRepo, PlantOntology plantOntology) {
+        this.sensorRepo = sensorRepo;
+        this.plantOntology = plantOntology;
+    }
+
 
     private final List<String> parameters = List.of("temperature", "light", "humidity", "soilMoisture");
 
 
-    public SensorDataService(SensorReadingRepository sensorRepo) {
-        this.sensorRepo = sensorRepo;
-    }
+
 
 
     public void generateRandomReadingsForPlant(PlantEntity plant) {
@@ -66,35 +72,43 @@ public class SensorDataService {
     }
 
 
-    public List<String> evaluateAlertsFromMap(Map<String, Double> values) {
+    public List<String> evaluateAlertsFromMap(Map<String, Double> values, String plantType) {
         List<String> alerts = new ArrayList<>();
+        Map<String, String> needs = plantOntology.getNeedsFromPlantType(plantType); // high / low
 
         for (Map.Entry<String, Double> entry : values.entrySet()) {
             String param = entry.getKey();
             double value = entry.getValue();
 
-            switch (param) {
-                case "temperature":
-                    if (value < 20) alerts.add("Ниска температура: " + value);
-                    else if (value > 35) alerts.add("Висока температура: " + value);
-                    break;
-                case "light":
-                    if (value < 500) alerts.add("Слаба светлина: " + value);
-                    else if (value > 500) alerts.add("Силна светлина: " + value);
-                    break;
-                case "humidity":
-                    if (value < 60) alerts.add("Ниска влажност: " + value);
-                    else if (value > 60) alerts.add("Висока влажност: " + value);
-                    break;
-                case "soilMoisture":
-                    if (value < 40) alerts.add("Суха почва: " + value);
-                    else if (value > 60) alerts.add("Прекалено влажна почва: " + value);
-                    break;
+            if (!needs.containsKey(param)) continue;
+
+            String needLevel = needs.get(param);
+            String condition = plantOntology.determineCondition(param, needLevel, value);
+
+            if (condition != null) {
+                alerts.add(getReadableAlert(param, condition, value));
             }
         }
 
         return alerts;
     }
+
+
+    private String getReadableAlert(String param, String condition, double value) {
+        switch (condition) {
+            case "LowTemperatureCondition": return "Ниска температура: " + value;
+            case "HighTemperatureCondition": return "Висока температура: " + value;
+            case "LowHumidityCondition": return "Ниска влажност: " + value;
+            case "HighHumidityCondition": return "Висока влажност: " + value;
+            case "LowLightCondition": return "Слаба светлина: " + value;
+            case "HighLightCondition": return "Силна светлина: " + value;
+            case "LowSoilMoistureCondition": return "Суха почва: " + value;
+            case "HighSoilMoistureCondition": return "Прекалено влажна почва: " + value;
+            default: return param + ": " + value;
+        }
+    }
+
+
 
 
 

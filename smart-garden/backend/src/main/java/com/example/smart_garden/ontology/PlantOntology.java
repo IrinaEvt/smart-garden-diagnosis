@@ -669,29 +669,35 @@ public class PlantOntology {
         String needLevel = needs.get(param);
         String condition = null;
 
-        switch (param) {
-            case "temperature":
-                if (needLevel.equals("low") && value > 35) condition = "HighTemperatureCondition";
-                if (needLevel.equals("high") && value < 20) condition = "LowTemperatureCondition";
-                break;
-            case "humidity":
-                if (needLevel.equals("low") && value > 60) condition = "HighHumidityCondition";
-                if (needLevel.equals("high") && value < 60) condition = "LowHumidityCondition";
-                break;
-            case "light":
-                if (needLevel.equals("low") && value > 500) condition = "HighLightCondition";
-                if (needLevel.equals("high") && value < 500) condition = "LowLightCondition";
-                break;
-            case "soilMoisture":
-                if (needLevel.equals("low") && value > 60) condition = "HighSoilMoistureCondition";
-                if (needLevel.equals("high") && value < 40) condition = "LowSoilMoistureCondition";
-                break;
-        }
+        condition = determineCondition(param, needLevel, value);
+
 
         if (condition != null) {
             addEnvironmentalCondition(plantName, condition);
 
         }
+    }
+
+    public String determineCondition(String param, String needLevel, double value) {
+        switch (param) {
+            case "temperature":
+                if (needLevel.equals("low") && value > 35) return "HighTemperatureCondition";
+                if (needLevel.equals("high") && value < 20) return "LowTemperatureCondition";
+                break;
+            case "humidity":
+                if (needLevel.equals("low") && value > 60) return "HighHumidityCondition";
+                if (needLevel.equals("high") && value < 60) return "LowHumidityCondition";
+                break;
+            case "light":
+                if (needLevel.equals("low") && value > 500) return "HighLightCondition";
+                if (needLevel.equals("high") && value < 500) return "LowLightCondition";
+                break;
+            case "soilMoisture":
+                if (needLevel.equals("low") && value > 60) return "HighSoilMoistureCondition";
+                if (needLevel.equals("high") && value < 40) return "LowSoilMoistureCondition";
+                break;
+        }
+        return null;
     }
 
 
