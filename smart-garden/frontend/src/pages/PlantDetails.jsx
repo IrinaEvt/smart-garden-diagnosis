@@ -33,6 +33,7 @@ export default function PlantDetails() {
   const [selectedImage, setSelectedImage] = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [showRiskButton, setShowRiskButton] = useState(false);
 const [plantRisks, setPlantRisks] = useState([])
 
 
@@ -113,25 +114,33 @@ const fetchRiskAssessment = async () => {
     }
   }
 
-  const fetchSensorHistory = async () => {
-    const res = await axios.get(`/plants/${id}/sensors/history`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    console.log(res.data)
-    const parsed = res.data.readings.map(r => ({
-      ...r,
-      readingValue: parseFloat(r.readingValue)
-    }))
-    setSensorHistory(parsed)
-    setSensorAlerts(res.data.alerts)
-     setShowRiskButton(true) 
+const fetchSensorHistory = async () => {
+  const res = await axios.get(`/plants/${id}/sensors/history`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
 
-    if (res.data.alerts.length >= 2) {
-      fetchEasyCareSuggestion(res.data.alerts.length)
-    } else {
-      setEasySuggestion(null)
-    }
+  const parsed = res.data.readings.map(r => ({
+    ...r,
+    readingValue: parseFloat(r.readingValue)
+  }));
+  setSensorHistory(parsed);
+  setSensorAlerts(res.data.alerts);
+
+  await fetchRiskAssessment();
+
+  if (res.data.alerts.length >= 2) {
+    setShowRiskButton(true); // ако ползваш такъв стейт
+    fetchEasyCareSuggestion(res.data.alerts.length);
+  } else {
+    // 🧼 Изчистване, когато няма сериозни аларми
+    setShowRiskButton(false);
+    setEasySuggestion(null);
+    setPlantRisks([]); // 🧽 изчистваме рисковете
   }
+};
+
+
+
 
   const fetchEasyCareSuggestion = async (issueCount) => {
     try {
@@ -157,7 +166,7 @@ const fetchRiskAssessment = async () => {
 
   const fetchReasoning = async () => {
     try {
-      const res = await axios.get(`/reasoning/${id}`, {
+      const res = await axios.get(`/reasoning/${id}/agent`, {
         headers: { Authorization: `Bearer ${token}` }
       })
       console.log(res.data.reasoning)
@@ -542,9 +551,10 @@ const analyzeImage = async () => {
         Обнови сензори
       </button>
 
-      {(sensorAlerts.length > 0 || plantRisks.length > 0) && (
+      {/* 👉 Проблеми със сензорите и рискове */}
+      {sensorAlerts.length > 0 || plantRisks.length > 0 ? (
         <div className="mt-4 flex gap-8 items-start">
-          {/* Вляво: сензорни предупреждения */}
+          {/* 🔴 Аларми от сензори */}
           <div className="text-red-400 flex-1">
             <h4 className="font-medium">⚠️ Проблеми със сензорите:</h4>
             <ul className="list-disc list-inside text-white">
@@ -566,16 +576,13 @@ const analyzeImage = async () => {
                 const finalAlert = alertWithLabel.replace(rawValue, highlightedValue);
 
                 return (
-                  <li
-                    key={i}
-                    dangerouslySetInnerHTML={{ __html: finalAlert }}
-                  />
+                  <li key={i} dangerouslySetInnerHTML={{ __html: finalAlert }} />
                 );
               })}
             </ul>
           </div>
 
-        
+          {/* 🧠 Бутон за оценка и рискове */}
           <div className="flex flex-col gap-4 flex-1 text-orange-400">
             {sensorAlerts.length >= 2 && (
               <button
@@ -598,14 +605,11 @@ const analyzeImage = async () => {
             )}
           </div>
         </div>
-      )}
-
-
-      {sensorAlerts.length === 0 && (
+      ) : (
         <p className="text-green-400 mt-4">✅ Всичко е в норма!</p>
       )}
 
-
+      {/* 🌿 Лесно за гледане предложение */}
       {easySuggestion && (
         <div className="mt-6 border-t border-green-800 pt-4">
           <h3 className="text-lg font-semibold text-green-300">🌿 Препоръка</h3>
@@ -617,17 +621,18 @@ const analyzeImage = async () => {
       )}
     </div>
 
-
+    {/* 📊 Графики за сензори */}
     {["temperature", "light", "humidity", "soilMoisture"].map(param => (
       <SensorChart
         key={param}
         parameter={param}
-        title={sensorParameterLabels[param]} 
+        title={sensorParameterLabels[param]}
         data={sensorHistory}
       />
     ))}
   </div>
 )}
+
 
       </main>
     </div>

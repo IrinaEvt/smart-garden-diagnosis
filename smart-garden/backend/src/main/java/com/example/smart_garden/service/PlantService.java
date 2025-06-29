@@ -52,7 +52,7 @@ public class PlantService {
         plant.setUser(user);
         PlantEntity saved = plantRepo.save(plant);
         agentManager.startSensorAgent(saved.getId());
-        agentManager.startPlantAgent(saved.getId(),saved.getName());
+        agentManager.startPlantAgent(saved.getId(),saved.getName(), saved.getType());
         System.out.println("📦 Създавам индивид " + plant.getName() + " от тип " + plant.getType());
 
         return saved;
@@ -72,7 +72,14 @@ public class PlantService {
             symptomRepo.save(symptom);
 
             ontology.createSymptomForPlant(plant.getType(), symptomName);
+            agentManager.triggerReasoningFor(plant.getId(),plant.getName(), plant.getType());
+            System.out.println("➕ Добавен симптом и reasoning задействан за " + plant.getName());
+
         }
+    }
+
+    public Optional<PlantEntity> getPlantWithSymptoms(Long id) {
+        return plantRepo.findByIdWithSymptoms(id);
     }
 
     public Map<String, List<String>> getSymptomOptionsGrouped() {

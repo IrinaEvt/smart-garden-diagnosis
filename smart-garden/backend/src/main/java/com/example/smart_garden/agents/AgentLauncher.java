@@ -8,20 +8,15 @@ import jade.core.ProfileImpl;
 import jade.core.Runtime;
 import jade.wrapper.AgentController;
 import jade.wrapper.ContainerController;
-import jade.wrapper.StaleProxyException;
-import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
-
-
-
 
 @Component
 public class AgentLauncher implements ApplicationListener<ContextRefreshedEvent> {
 
     private boolean initialized = false;
+    private ContainerController container;
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
@@ -35,29 +30,24 @@ public class AgentLauncher implements ApplicationListener<ContextRefreshedEvent>
         }
     }
 
-    private ContainerController container;
-
     public void startJade() {
         System.out.println("✅ AgentLauncher стартира.");
         try {
             Profile profile = new ProfileImpl();
-            profile.setParameter(Profile.GUI, "true");
+            profile.setParameter(Profile.GUI, "true"); // "false" ако не искаш JADE GUI
             container = Runtime.instance().createMainContainer(profile);
 
-
             PlantOntology ontology = SpringContextBridge.getBean(PlantOntology.class);
-
-
             AgentManagerService agentManager = SpringContextBridge.getBean(AgentManagerService.class);
-            agentManager.setContainer(container);
 
-            // Стартирай агента безопасно
+            agentManager.setContainer(container);
+            System.out.println("✅ Контейнер зададен на AgentManager");
+
             startAgent("MonitorAgent", MonitorAgent.class.getName(), new Object[]{ontology});
             startAgent("UIAgent", UIAgent.class.getName(), null);
 
-
-
         } catch (Exception e) {
+            System.err.println("❌ Грешка при стартиране на JADE контейнера или агенти:");
             e.printStackTrace();
         }
     }
@@ -66,11 +56,10 @@ public class AgentLauncher implements ApplicationListener<ContextRefreshedEvent>
         try {
             AgentController agent = container.createNewAgent(name, className, args);
             agent.start();
+            System.out.println("✅ Стартиран агент: " + name);
         } catch (Exception e) {
+            System.err.println("❌ Грешка при стартиране на агент: " + name);
             e.printStackTrace();
         }
     }
 }
-
-
-
