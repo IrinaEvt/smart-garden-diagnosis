@@ -38,7 +38,7 @@ public class SensorAgent extends Agent {
             return;
         }
 
-        addBehaviour(new TickerBehaviour(this, 40000) {
+        addBehaviour(new TickerBehaviour(this, 20000) {
             @Override
             protected void onTick() {
                 sensorDataService.generateRandomReadingsForPlant(plant);

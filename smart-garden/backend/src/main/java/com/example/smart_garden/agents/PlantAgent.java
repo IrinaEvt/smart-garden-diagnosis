@@ -7,11 +7,12 @@ import com.example.smart_garden.service.AgentManagerService;
 import com.example.smart_garden.service.PlantService;
 import com.example.smart_garden.service.ReasoningBlock;
 import jade.core.Agent;
+import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
+import jade.lang.acl.ACLMessage;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class PlantAgent extends Agent {
 
@@ -19,9 +20,10 @@ public class PlantAgent extends Agent {
     private String plantName;
     private String plantType;
     private Long plantId;
-    private List<ReasoningBlock> latestAdvice = new ArrayList<>();
 
-    private volatile boolean reasoningCompleted = false; // 🔒 за нишки
+    private List<ReasoningBlock> latestAdvice = new ArrayList<>();
+    private volatile boolean reasoningCompleted = false;
+    private volatile boolean externalRiskDetected = false;
 
     public boolean isReasoningCompleted() {
         return reasoningCompleted;
@@ -34,8 +36,8 @@ public class PlantAgent extends Agent {
     @Override
     protected void setup() {
         Object[] args = getArguments();
-        if (args == null || args.length < 2) {
-            System.err.println("❌ PlantAgent: Липсват аргументи (име и тип)!");
+        if (args == null || args.length < 3) {
+            System.err.println("❌ PlantAgent: Липсват аргументи (ID, име и тип)!");
             doDelete();
             return;
         }
@@ -46,17 +48,33 @@ public class PlantAgent extends Agent {
 
         this.ontology = SpringContextBridge.getBean(PlantOntology.class);
 
-        // 🟢 Регистриране в мениджъра
+        // Регистрация при AgentManager
         AgentManagerService manager = SpringContextBridge.getBean(AgentManagerService.class);
         manager.registerPlantAgent(plantName, this);
 
         System.out.println("✅ PlantAgent стартиран за растение: " + plantName);
 
-        // Първоначално reasoning изпълнение
+        // Първоначален reasoning
         addBehaviour(new OneShotBehaviour() {
             @Override
             public void action() {
                 runReasoning();
+            }
+        });
+
+        // Поведение за получаване на рискови съобщения
+        addBehaviour(new CyclicBehaviour() {
+            @Override
+            public void action() {
+                ACLMessage msg = receive();
+                if (msg != null) {
+                    if ("RISK_PRESENT".equals(msg.getContent())) {
+                        externalRiskDetected = true;
+                        System.out.println("⚠️ PlantAgent " + plantName + ": получено съобщение за външен риск.");
+                    }
+                } else {
+                    block();
+                }
             }
         });
     }
@@ -67,7 +85,6 @@ public class PlantAgent extends Agent {
         System.out.println("🛑 PlantAgent за " + plantName + " приключи.");
     }
 
-    // 🔁 Извикай reasoning от контролер или друго място
     public void doReasoning() {
         addBehaviour(new OneShotBehaviour() {
             @Override
@@ -77,12 +94,9 @@ public class PlantAgent extends Agent {
         });
     }
 
-    // 🤖 Изпълнение на reasoning логика
     private void runReasoning() {
-        // Вземи PlantEntity от името
         PlantService plantService = SpringContextBridge.getBean(PlantService.class);
         Optional<PlantEntity> plantOpt = plantService.getPlantWithSymptoms(plantId);
-
 
         if (plantOpt.isEmpty()) {
             System.err.println("❌ Не може да се зареди растение: " + plantName);
@@ -90,20 +104,57 @@ public class PlantAgent extends Agent {
         }
 
         PlantEntity plant = plantOpt.get();
+        List<String> plantSymptoms = plant.getSymptomsStrings();
 
+        List<ReasoningBlock> allAdvice = ontology.getAdviceForPlantIndividual(plantType);
 
-        // Вземи всички reasoning блокове за типа
-        List<ReasoningBlock> allAdvice = ontology.getAdviceForPlantIndividual(plantType); // или по тип, ако се налага
+        // Environmental причини
+        Set<String> environmentalCauses = Set.of(
+                "HighHumidity",
+                "HighLight",
+                "HighTemperature",
+                "LowHumidity",
+                "LowLight",
+                "LowTemperature",
+                "Overwatering",
+                "WaterDeficiency"
+        );
 
-        // Филтрирай спрямо симптомите
-        latestAdvice = allAdvice.stream()
+        // Филтриране по симптоми
+        List<ReasoningBlock> filtered = allAdvice.stream()
                 .filter(block -> block.getSymptoms().stream()
-                        .anyMatch(symptom ->
-                                plant.getSymptomsStrings().stream().anyMatch(symptom::endsWith)))
-                .toList();
+                        .anyMatch(symptom -> plantSymptoms.stream().anyMatch(symptom::endsWith)))
+                .collect(Collectors.toList());
+
+        // Приоритизиране, ако има външен риск
+        if (externalRiskDetected) {
+            System.out.println("🌡️ Външен риск засечен – приоритизиране на environmental причини...");
+            filtered = filtered.stream()
+                    .sorted((b1, b2) -> {
+                        boolean b1IsEnv = environmentalCauses.contains(b1.getCause());
+                        boolean b2IsEnv = environmentalCauses.contains(b2.getCause());
+
+                        System.out.println("🔍 Сравнявам:");
+                        System.out.println("  b1: " + b1.getCause() + " (environmental? " + b1IsEnv + ")");
+                        System.out.println("  b2: " + b2.getCause() + " (environmental? " + b2IsEnv + ")");
+
+                        int result = Boolean.compare(!b1IsEnv, !b2IsEnv);
+                        if (result < 0) {
+                            System.out.println("👉 " + b1.getCause() + " ще бъде преди " + b2.getCause());
+                        } else if (result > 0) {
+                            System.out.println("👉 " + b2.getCause() + " ще бъде преди " + b1.getCause());
+                        } else {
+                            System.out.println("👉 Без промяна в реда.");
+                        }
+
+                        return result;
+                    })
+                    .collect(Collectors.toList());
+        }
+
+        this.latestAdvice = filtered;
 
         System.out.println("💡 Reasoning за " + plantName + " – резултати: " + latestAdvice.size());
-
         for (ReasoningBlock block : latestAdvice) {
             System.out.println("  Причина: " + block.getCause());
             System.out.println("  Симптоми: " + block.getSymptoms());
@@ -113,9 +164,7 @@ public class PlantAgent extends Agent {
         reasoningCompleted = true;
     }
 
-
     public List<ReasoningBlock> getLatestAdvice() {
         return latestAdvice;
     }
-
 }

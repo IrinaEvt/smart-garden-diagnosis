@@ -60,6 +60,12 @@ public class MonitorAgent extends Agent {
                             reply.addReceiver(new AID("UIAgent", AID.ISLOCALNAME));
                             send(reply);
                             System.out.println("📤 Изпратено към UIAgent: " + reply.getContent());
+
+                            ACLMessage riskMsg = new ACLMessage(ACLMessage.INFORM);
+                            riskMsg.setContent("RISK_PRESENT"); // 📦 само сигнал
+                            riskMsg.addReceiver(new AID("PlantAgent-" + plantName, AID.ISLOCALNAME));
+                            send(riskMsg);
+                            System.out.println("📤 Изпратено към PlantAgent-" + plantName + ": RISK_PRESENT");
                         }
 
                     } else {
