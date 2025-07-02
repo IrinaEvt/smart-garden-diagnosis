@@ -37,7 +37,6 @@ public class PlantAgent extends Agent {
     protected void setup() {
         Object[] args = getArguments();
         if (args == null || args.length < 3) {
-            System.err.println("❌ PlantAgent: Липсват аргументи (ID, име и тип)!");
             doDelete();
             return;
         }
@@ -82,7 +81,6 @@ public class PlantAgent extends Agent {
     @Override
     protected void takeDown() {
         SpringContextBridge.getBean(AgentManagerService.class).unregisterPlantAgent(plantName);
-        System.out.println("🛑 PlantAgent за " + plantName + " приключи.");
     }
 
     public void doReasoning() {
@@ -128,23 +126,23 @@ public class PlantAgent extends Agent {
 
         // Приоритизиране, ако има външен риск
         if (externalRiskDetected) {
-            System.out.println("🌡️ Външен риск засечен – приоритизиране на environmental причини...");
+            System.out.println("🌡Външен риск засечен – приоритизиране на environmental причини...");
             filtered = filtered.stream()
                     .sorted((b1, b2) -> {
                         boolean b1IsEnv = environmentalCauses.contains(b1.getCause());
                         boolean b2IsEnv = environmentalCauses.contains(b2.getCause());
 
-                        System.out.println("🔍 Сравнявам:");
+                        System.out.println("Сравнявам:");
                         System.out.println("  b1: " + b1.getCause() + " (environmental? " + b1IsEnv + ")");
                         System.out.println("  b2: " + b2.getCause() + " (environmental? " + b2IsEnv + ")");
 
                         int result = Boolean.compare(!b1IsEnv, !b2IsEnv);
                         if (result < 0) {
-                            System.out.println("👉 " + b1.getCause() + " ще бъде преди " + b2.getCause());
+                            System.out.println(b1.getCause() + " ще бъде преди " + b2.getCause());
                         } else if (result > 0) {
-                            System.out.println("👉 " + b2.getCause() + " ще бъде преди " + b1.getCause());
+                            System.out.println(b2.getCause() + " ще бъде преди " + b1.getCause());
                         } else {
-                            System.out.println("👉 Без промяна в реда.");
+                            System.out.println("Без промяна в реда.");
                         }
 
                         return result;

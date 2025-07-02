@@ -13,7 +13,7 @@ public class UserEntity {
 
     private String password;
 
-    private String role = "ROLE_USER"; // по подразбиране
+    private String role = "ROLE_USER";
 
     public Long getId() {
         return id;

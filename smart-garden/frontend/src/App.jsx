@@ -12,10 +12,9 @@ function App() {
     <>
     <Toaster position="top-center" toastOptions={{ duration: 4000 }} />
     <Routes>
-      {/* Публична страница (login/register) */}
+
       <Route path="/" element={<LoginRegister />} />
 
-      {/* Приватни маршрути */}
       <Route path="/dashboard" element={
         <PrivateRoute>
           <Dashboard />
@@ -40,7 +39,6 @@ function App() {
         </PrivateRoute>
       } />
 
-      {/* Пренасочване при невалиден път */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
     </>

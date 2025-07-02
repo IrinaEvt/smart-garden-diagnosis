@@ -74,7 +74,7 @@ public class SensorDataService {
 
     public List<String> evaluateAlertsFromMap(Map<String, Double> values, String plantType) {
         List<String> alerts = new ArrayList<>();
-        Map<String, String> needs = plantOntology.getNeedsFromPlantType(plantType); // high / low
+        Map<String, String> needs = plantOntology.getNeedsFromPlantType(plantType);
 
         for (Map.Entry<String, Double> entry : values.entrySet()) {
             String param = entry.getKey();
@@ -116,7 +116,7 @@ public class SensorDataService {
 
     private double generateRandomValueForParam(String param) {
         Random rand = new Random();
-        double chance = rand.nextDouble(); // 0.0 - 1.0
+        double chance = rand.nextDouble();
 
         double value;
 

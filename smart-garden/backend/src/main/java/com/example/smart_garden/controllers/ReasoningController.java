@@ -112,15 +112,6 @@ public class ReasoningController {
     }
 
 
-  /*  @PostMapping("/{plantId}/symptoms")
-    public ResponseEntity<Void> addSymptom(
-            @AuthenticationPrincipal UserDetails userDetails,
-            @PathVariable Long plantId,
-            @RequestBody Map<String, String> payload) {
-        String symptom = payload.get("name");
-        plantService.addSymptom(plantId, symptom);
-        return ResponseEntity.ok().build();
-    }*/
 
     @PostMapping("/{plantId}/symptoms")
     public ResponseEntity<Void> addSymptom(

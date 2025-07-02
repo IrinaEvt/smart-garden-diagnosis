@@ -52,20 +52,20 @@ public class MonitorAgent extends Agent {
                         ontology.evaluatePlantState(plantName, values);
 
                         List<String> risks = ontology.getRisksForPlant(plantName);
-                        System.out.println("🔍 Оценени рискове за " + plantName + ": " + risks);
+                        System.out.println("Оценени рискове за " + plantName + ": " + risks);
 
                         if (!risks.isEmpty()) {
                             ACLMessage reply = new ACLMessage(ACLMessage.INFORM);
                             reply.setContent("plant=" + plantName + ",risks=" + String.join("|", risks));
                             reply.addReceiver(new AID("UIAgent", AID.ISLOCALNAME));
                             send(reply);
-                            System.out.println("📤 Изпратено към UIAgent: " + reply.getContent());
+                            System.out.println(" Изпратено към UIAgent: " + reply.getContent());
 
                             ACLMessage riskMsg = new ACLMessage(ACLMessage.INFORM);
-                            riskMsg.setContent("RISK_PRESENT"); // 📦 само сигнал
+                            riskMsg.setContent("RISK_PRESENT");
                             riskMsg.addReceiver(new AID("PlantAgent-" + plantName, AID.ISLOCALNAME));
                             send(riskMsg);
-                            System.out.println("📤 Изпратено към PlantAgent-" + plantName + ": RISK_PRESENT");
+                            System.out.println("Изпратено към PlantAgent-" + plantName + ": RISK_PRESENT");
                         }
 
                     } else {

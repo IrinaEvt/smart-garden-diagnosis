@@ -171,7 +171,7 @@ export default function Dashboard() {
 
         <h1 className="text-3xl font-bold">Твоите растения</h1>
 
-        {/* 🔽 Тук идва условното показване */}
+
         {plants.length === 0 ? (
           <p className="text-gray-400 text-lg italic">
             Все още нямате добавени растения.

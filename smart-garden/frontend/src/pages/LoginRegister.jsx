@@ -112,16 +112,9 @@ export default function LoginRegister() {
                 {isLogin ? 'Вход' : 'Регистрация'}
               </button>
             </form>
-
-            <div className="flex justify-center mt-6 space-x-6 text-green-400 text-xl">
-              <button>f</button>
-              <button>G+</button>
-              <button>t</button>
-            </div>
           </div>
         </div>
 
-        {/* Дясна страна – снимка */}
         <div
           className="w-1/2 h-full bg-cover bg-center transition-all duration-700"
           style={{ backgroundImage: "url(/fern.jpg)" }}

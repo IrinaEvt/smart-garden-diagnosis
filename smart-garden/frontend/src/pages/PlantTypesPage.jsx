@@ -46,7 +46,7 @@ const mapHumidity = (value) => {
   return ''
 }
 
-  // За визуално обозначение (с листенца или подчертаване)
+
   const highlight = (value, match) => {
     return (
       <span className={value === match ? 'underline text-green-300 font-semibold' : 'text-gray-400'}>

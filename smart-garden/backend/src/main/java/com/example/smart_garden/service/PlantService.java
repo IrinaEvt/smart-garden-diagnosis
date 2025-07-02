@@ -135,7 +135,7 @@ public class PlantService {
         List<String> alerts = new ArrayList<>();
 
         if (sensorData == null || sensorData.isEmpty()) {
-            alerts.add("❗ Липсват данни от сензорите.");
+            alerts.add(" Липсват данни от сензорите.");
             return alerts;
         }
 
@@ -154,7 +154,7 @@ public class PlantService {
     private void checkParameter(List<String> alerts, String paramName, String expectedLevel, Double actualValue) {
         NeedRange range = interpretRange(expectedLevel, paramName);
         if (!range.isInRange(actualValue)) {
-            alerts.add("❗ Несъответствие в " + paramName +
+            alerts.add(" Несъответствие в " + paramName +
                     ": нужно '" + expectedLevel +
                     "', стойност: " + actualValue);
         }

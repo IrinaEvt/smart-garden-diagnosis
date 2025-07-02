@@ -1,4 +1,4 @@
-// src/api/plainAxios.js
+
 import axios from 'axios'
 
 const plainAxios = axios.create({

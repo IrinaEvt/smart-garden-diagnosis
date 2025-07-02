@@ -18,31 +18,26 @@ public class AgentManagerService {
 
     private ContainerController container;
 
-    // 🌿 Регистрирани PlantAgent-и по име на растение
     private final Map<String, PlantAgent> plantAgents = new ConcurrentHashMap<>();
 
     public void setContainer(ContainerController container) {
         this.container = container;
     }
 
-    // ✅ Регистриране на PlantAgent от самия агент в setup()
     public void registerPlantAgent(String plantName, PlantAgent agent) {
         plantAgents.put(plantName, agent);
-        System.out.println("📌 Регистриран PlantAgent за: " + plantName);
+
     }
 
-    // ❌ Премахване от регистъра (от takeDown)
     public void unregisterPlantAgent(String plantName) {
         plantAgents.remove(plantName);
-        System.out.println("🗑️ Премахнат PlantAgent за: " + plantName);
+
     }
 
-    // 🔍 Вземи PlantAgent по име на растение
     public PlantAgent getPlantAgent(String plantName) {
         return plantAgents.get(plantName);
     }
 
-    // 🚀 Стартиране на SensorAgent
     public void startSensorAgent(Long plantId) {
         if (container == null) return;
 
@@ -50,7 +45,7 @@ public class AgentManagerService {
 
         try {
             jade.wrapper.AgentController existingAgent = container.getAgent(agentName);
-            System.out.println("⚠️ SensorAgent вече съществува: " + agentName);
+
             return;
         } catch (Exception ignored) {
         }
@@ -61,16 +56,16 @@ public class AgentManagerService {
                     SensorAgent.class.getName(),
                     new Object[]{plantId}
             ).start();
-            System.out.println("🚀 Стартиран SensorAgent: " + agentName);
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    // 🚀 Стартирай reasoning агент ако не съществува
+
     public void startPlantAgent(Long plantId, String plantName, String plantType) {
         if (getPlantAgent(plantName) != null) {
-            System.out.println("⚠️ PlantAgent вече съществува: " + plantName);
+
             return;
         }
 
@@ -82,37 +77,33 @@ public class AgentManagerService {
                     new Object[]{plantId,plantName, plantType}
             );
             controller.start();
-            System.out.println("🚀 Стартиран PlantAgent: " + agentName);
+
         } catch (Exception e) {
-            System.err.println("❌ Грешка при стартиране на PlantAgent за " + plantName);
+            System.err.println("Грешка при стартиране на PlantAgent за " + plantName);
             e.printStackTrace();
         }
     }
 
-    // 🧠 Извикай reasoning, ако агентът е активен
+
     public void triggerReasoningFor(Long plantId, String plantName, String plantType) {
         PlantAgent agent = getPlantAgent(plantName);
         if (agent != null) {
-            agent.doReasoning();  // трябва да го има в PlantAgent
+            agent.doReasoning();
         } else {
-            System.out.println("❗ PlantAgent не е стартиран – стартирам сега.");
             startPlantAgent(plantId, plantName, plantType);
         }
     }
 
-    // 🛑 Спри агентите свързани с растение
+
     public void stopAgentsForPlant(Long plantId, String plantName) {
         try {
             String sensorAgentName = "SensorAgent-" + plantId;
             String plantAgentName = "PlantAgent-" + plantName;
 
-            System.out.println("🛑 Спиране на агенти за растение: " + plantName);
-
             container.getAgent(sensorAgentName).kill();
             container.getAgent(plantAgentName).kill();
 
         } catch (Exception e) {
-            System.err.println("❌ Грешка при спиране на агентите за " + plantName);
             e.printStackTrace();
         }
 

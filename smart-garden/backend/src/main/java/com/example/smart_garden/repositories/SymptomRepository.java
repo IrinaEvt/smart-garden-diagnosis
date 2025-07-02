@@ -9,7 +9,6 @@ import java.util.List;
 @Repository
 public interface SymptomRepository extends JpaRepository<SymptomEntity, Long> {
 
-    // Извлича всички симптоми по растение
     List<SymptomEntity> findByPlantId(Long id);
 }
 

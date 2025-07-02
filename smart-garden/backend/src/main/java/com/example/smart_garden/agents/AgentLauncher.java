@@ -25,7 +25,7 @@ public class AgentLauncher implements ApplicationListener<ContextRefreshedEvent>
                 startJade();
                 initialized = true;
             } else {
-                System.err.println("❌ SpringContextBridge.context все още е null – агентите няма да се стартират.");
+                System.err.println(" SpringContextBridge.context все е null – агентите няма да се стартират.");
             }
         }
     }
@@ -34,7 +34,7 @@ public class AgentLauncher implements ApplicationListener<ContextRefreshedEvent>
         System.out.println("✅ AgentLauncher стартира.");
         try {
             Profile profile = new ProfileImpl();
-            profile.setParameter(Profile.GUI, "true"); // "false" ако не искаш JADE GUI
+            profile.setParameter(Profile.GUI, "true");
             container = Runtime.instance().createMainContainer(profile);
 
             PlantOntology ontology = SpringContextBridge.getBean(PlantOntology.class);

@@ -129,13 +129,12 @@ const fetchSensorHistory = async () => {
   await fetchRiskAssessment();
 
   if (res.data.alerts.length >= 2) {
-    setShowRiskButton(true); // ако ползваш такъв стейт
+    setShowRiskButton(true); 
     fetchEasyCareSuggestion(res.data.alerts.length);
   } else {
-    // 🧼 Изчистване, когато няма сериозни аларми
     setShowRiskButton(false);
     setEasySuggestion(null);
-    setPlantRisks([]); // 🧽 изчистваме рисковете
+    setPlantRisks([]); 
   }
 };
 
@@ -437,7 +436,7 @@ const analyzeImage = async () => {
       </form>
     </div>
 
-    {/* Дясна колона: само анализ на изображение */}
+
     <div className="w-full md:w-80 shrink-0 pr-2 md:pr-6 space-y-4">
  <div className="space-y-4">
       {/* Качване на изображение */}
@@ -551,10 +550,9 @@ const analyzeImage = async () => {
         Обнови сензори
       </button>
 
-      {/* 👉 Проблеми със сензорите и рискове */}
+      {/* Проблеми със сензорите и рискове */}
       {sensorAlerts.length > 0 || plantRisks.length > 0 ? (
         <div className="mt-4 flex gap-8 items-start">
-          {/* 🔴 Аларми от сензори */}
           <div className="text-red-400 flex-1">
             <h4 className="font-medium">⚠️ Проблеми със сензорите:</h4>
             <ul className="list-disc list-inside text-white">
@@ -582,9 +580,9 @@ const analyzeImage = async () => {
             </ul>
           </div>
 
-          {/* 🧠 Бутон за оценка и рискове */}
+          {/* Бутон за оценка и рискове */}
           <div className="flex flex-col gap-4 flex-1 text-orange-400">
-            {sensorAlerts.length >= 2 && (
+            {false && sensorAlerts.length >= 2 && (
               <button
                 onClick={fetchRiskAssessment}
                 className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-full text-sm self-start"
@@ -609,7 +607,6 @@ const analyzeImage = async () => {
         <p className="text-green-400 mt-4">✅ Всичко е в норма!</p>
       )}
 
-      {/* 🌿 Лесно за гледане предложение */}
       {easySuggestion && (
         <div className="mt-6 border-t border-green-800 pt-4">
           <h3 className="text-lg font-semibold text-green-300">🌿 Препоръка</h3>
@@ -621,7 +618,7 @@ const analyzeImage = async () => {
       )}
     </div>
 
-    {/* 📊 Графики за сензори */}
+    {/* Графики за сензори */}
     {["temperature", "light", "humidity", "soilMoisture"].map(param => (
       <SensorChart
         key={param}
